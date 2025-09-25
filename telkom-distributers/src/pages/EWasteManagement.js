@@ -29,7 +29,7 @@ const EWasteManagement = () => {
 
   // Firestore listener
   useEffect(() => {
-    const q = query(collection(db, "eWasteEntries"), orderBy("timestamp", "desc"));
+    const q = query(collection(db, "eWasteEntries"), orderBy("createdAt", "desc"));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const logsFromDB = snapshot.docs.map(doc => ({
         id: doc.id,
@@ -43,7 +43,8 @@ const EWasteManagement = () => {
   const handleAddEntry = async (entryData) => {
     try {
       const { addEWasteLog } = await import("../../services/ewasteService");
-      await addEWasteLog(entryData);
+      await addEWasteLog({ ...entryData, createdAt: new Date() });
+      // onSnapshot will automatically update the UI
     } catch (error) {
       console.error("Failed to add e-waste log:", error);
     }
@@ -58,13 +59,13 @@ const EWasteManagement = () => {
     }
   };
 
-  const totalWeight = logs.reduce((sum, log) => sum + log.weight, 0);
-  const totalRewards = logs.reduce((sum, log) => sum + log.rewardPoints, 0);
+  const totalWeight = logs.reduce((sum, log) => sum + (log.weight || 0), 0);
+  const totalRewards = logs.reduce((sum, log) => sum + (log.rewardPoints || 0), 0);
 
   const filteredLogs = logs.filter(log => 
-    log.customer.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    log.distributor.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    log.items.some(item => item.toLowerCase().includes(searchTerm.toLowerCase()))
+    log.customer?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    log.distributor?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    log.items?.some(item => item.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   return (
@@ -170,21 +171,23 @@ const EWasteManagement = () => {
                           {log.status}
                         </Badge>
                       </div>
-                      <span className="text-sm text-muted-foreground">{log.timestamp}</span>
+                      <span className="text-sm text-muted-foreground">
+                        {log.createdAt?.toDate().toLocaleString()}
+                      </span>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-3">
                       <div>
                         <p className="text-sm text-muted-foreground">Items</p>
-                        <p className="font-medium text-foreground">{log.items.join(", ")}</p>
+                        <p className="font-medium text-foreground">{log.items?.join(", ")}</p>
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground">Weight</p>
-                        <p className="font-medium text-foreground">{log.weight} kg</p>
+                        <p className="font-medium text-foreground">{log.weight || 0} kg</p>
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground">Reward Points</p>
-                        <p className="font-medium text-accent">{log.rewardPoints} pts</p>
+                        <p className="font-medium text-accent">{log.rewardPoints || 0} pts</p>
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground">Distributor</p>
@@ -197,8 +200,6 @@ const EWasteManagement = () => {
                         log={log}
                         onStatusChange={handleStatusChange}
                         trigger={<button className="px-3 py-1 border rounded-md text-sm">View Details</button>}
-
-                        // trigger={<Button size="sm" variant="outline">View Details</Button>}
                       />
                     </div>
                   </div>
