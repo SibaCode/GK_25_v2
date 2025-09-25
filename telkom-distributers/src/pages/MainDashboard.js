@@ -27,7 +27,7 @@ const MainDashboard = () => {
 
   // Mock data
   const recentFraudCases = [
-    { id: "FR-001", customer: "John Doe", status: "Pending", timestamp: "2h ago" },
+    { id: "FR-001", customer: "John Doesss", status: "Pending", timestamp: "2h ago" },
     { id: "FR-002", customer: "Jane Smith", status: "Resolved", timestamp: "5h ago" },
   ];
 

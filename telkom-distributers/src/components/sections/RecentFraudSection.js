@@ -1,15 +1,13 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Button } from "../ui/button";
 import { Shield, ArrowRight, Plus } from "lucide-react";
 import { AddFraudCaseModal } from "../modals/AddFraudCaseModal";
 
-const recentFraudCases = [
-  { id: "FR-2024-001", customer: "John Doe", status: "Pending" },
-  { id: "FR-2024-002", customer: "Jane Smith", status: "Resolved" },
-  { id: "FR-2024-003", customer: "Mike Johnson", status: "Not Finished" },
-];
+// Firebase imports
+import { collection, getDocs } from "firebase/firestore";
+import { db } from "../../firebase"; // adjust path if needed
 
 // Tailwind badge component
 const StatusBadge = ({ status }) => {
@@ -30,8 +28,29 @@ const StatusBadge = ({ status }) => {
 };
 
 export const RecentFraudSection = () => {
-  const handleAddFraudCase = (caseData) => {
-    console.log("New fraud case:", caseData);
+  const [fraudCases, setFraudCases] = useState([]);
+
+  // Fetch fraud cases from Firestore
+  const fetchFraudCases = async () => {
+    try {
+      const querySnapshot = await getDocs(collection(db, "fraudCases"));
+      const cases = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setFraudCases(cases);
+    } catch (error) {
+      console.error("Error fetching fraud cases:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchFraudCases();
+  }, []);
+
+  const handleAddFraudCase = (newCase) => {
+    // Optionally, refresh the list after adding
+    fetchFraudCases();
   };
 
   return (
@@ -42,23 +61,23 @@ export const RecentFraudSection = () => {
           Recent Fraud Cases
         </CardTitle>
         <Link to="/fraud">
-        <Button
-            className="flex items-center gap-1 px-3 py-1 text-sm font-medium bg-blue-100 text-blue-700 hover:bg-blue-200 hover:shadow transition-all rounded"
-        >
+          <Button className="flex items-center gap-1 px-3 py-1 text-sm font-medium bg-blue-100 text-blue-700 hover:bg-blue-200 hover:shadow transition-all rounded">
             View All <ArrowRight className="w-4 h-4" />
-        </Button>
+          </Button>
         </Link>
       </CardHeader>
 
       <CardContent className="space-y-3">
-        {recentFraudCases.map((fraudCase) => (
+        {fraudCases.map((fraudCase) => (
           <div
             key={fraudCase.id}
             className="flex justify-between items-center p-3 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors cursor-pointer"
           >
             <div>
-              <p className="font-medium text-sm">{fraudCase.id}</p>
-              <p className="text-xs text-gray-600">{fraudCase.customer}</p>
+              <p className="font-medium text-sm">{fraudCase.caseNumber}</p>
+              <p className="text-xs text-gray-600">{fraudCase.customerName}</p>
+              <p className="text-xs text-gray-500">Priority: {fraudCase.priority}</p>
+
             </div>
             <StatusBadge status={fraudCase.status} />
           </div>
@@ -78,7 +97,6 @@ export const RecentFraudSection = () => {
         />
       </CardContent>
     </Card>
-    
   );
 };
 
