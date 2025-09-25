@@ -43,7 +43,15 @@ const EWasteManagement = () => {
   const handleAddEntry = async (entryData) => {
     try {
       const { addEWasteLog } = await import("../../services/ewasteService");
-      await addEWasteLog({ ...entryData, createdAt: new Date() });
+      await addEWasteLog({
+        ...entryData,
+        createdAt: new Date(),
+        items: Array.isArray(entryData.items) ? entryData.items : [entryData.items || "Unknown"],
+        weight: entryData.weight || 0,
+        rewardPoints: entryData.rewardPoints || 0,
+        distributor: entryData.distributor || "Unknown",
+        status: entryData.status || "Collected"
+      });
       // onSnapshot will automatically update the UI
     } catch (error) {
       console.error("Failed to add e-waste log:", error);
@@ -59,13 +67,14 @@ const EWasteManagement = () => {
     }
   };
 
+  // Safe reductions
   const totalWeight = logs.reduce((sum, log) => sum + (log.weight || 0), 0);
   const totalRewards = logs.reduce((sum, log) => sum + (log.rewardPoints || 0), 0);
 
   const filteredLogs = logs.filter(log => 
-    log.customer?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (log.customer?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     log.distributor?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    log.items?.some(item => item.toLowerCase().includes(searchTerm.toLowerCase()))
+    (Array.isArray(log.items) ? log.items.some(item => item.toLowerCase().includes(searchTerm.toLowerCase())) : false))
   );
 
   return (
@@ -166,20 +175,26 @@ const EWasteManagement = () => {
                   <div key={log.id} className="p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors">
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-3">
-                        <h3 className="font-semibold text-foreground">{log.customer}</h3>
-                        <Badge className={getStatusColor(log.status)}>
-                          {log.status}
+                        <h3 className="font-semibold text-foreground">{log.customer || "N/A"}</h3>
+                        <Badge className={getStatusColor(log.status || "Unknown")}>
+                          {log.status || "Unknown"}
                         </Badge>
                       </div>
                       <span className="text-sm text-muted-foreground">
-                        {log.createdAt?.toDate().toLocaleString()}
+                        {log.createdAt
+                          ? (log.createdAt.toDate
+                              ? log.createdAt.toDate().toLocaleString()
+                              : new Date(log.createdAt).toLocaleString())
+                          : "N/A"}
                       </span>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-3">
                       <div>
                         <p className="text-sm text-muted-foreground">Items</p>
-                        <p className="font-medium text-foreground">{log.items?.join(", ")}</p>
+                        <p className="font-medium text-foreground">
+                          {Array.isArray(log.items) ? log.items.join(", ") : log.items || "N/A"}
+                        </p>
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground">Weight</p>
@@ -191,7 +206,7 @@ const EWasteManagement = () => {
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground">Distributor</p>
-                        <p className="font-medium text-foreground">{log.distributor}</p>
+                        <p className="font-medium text-foreground">{log.distributor || "N/A"}</p>
                       </div>
                     </div>
 
