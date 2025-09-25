@@ -30,6 +30,7 @@ export const RecentEWasteSection = () => {
             View All <ArrowRight className="w-4 h-4" />
         </Button>
         </Link>
+        
       </CardHeader>
 
       <CardContent className="space-y-3">
