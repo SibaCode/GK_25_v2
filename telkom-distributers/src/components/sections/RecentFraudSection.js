@@ -6,8 +6,8 @@ import { Shield, ArrowRight, Plus } from "lucide-react";
 import { AddFraudCaseModal } from "../modals/AddFraudCaseModal";
 
 // Firebase imports
-import { collection, getDocs } from "firebase/firestore";
-import { db } from "../../firebase"; // adjust path if needed
+import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
+import { db } from "../../firebase";
 
 // Tailwind badge component
 const StatusBadge = ({ status }) => {
@@ -30,27 +30,20 @@ const StatusBadge = ({ status }) => {
 export const RecentFraudSection = () => {
   const [fraudCases, setFraudCases] = useState([]);
 
-  // Fetch fraud cases from Firestore
-  const fetchFraudCases = async () => {
-    try {
-      const querySnapshot = await getDocs(collection(db, "fraudCases"));
-      const cases = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      setFraudCases(cases);
-    } catch (error) {
-      console.error("Error fetching fraud cases:", error);
-    }
-  };
-
   useEffect(() => {
-    fetchFraudCases();
+    const q = query(collection(db, "fraudCases"), orderBy("createdAt", "desc"));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const cases = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      setFraudCases(cases);
+    }, (error) => {
+      console.error("Error fetching fraud cases:", error);
+    });
+
+    return () => unsubscribe(); // Cleanup listener on unmount
   }, []);
 
   const handleAddFraudCase = (newCase) => {
-    // Optionally, refresh the list after adding
-    fetchFraudCases();
+    // No need to fetch again, onSnapshot updates automatically
   };
 
   return (
@@ -77,7 +70,6 @@ export const RecentFraudSection = () => {
               <p className="font-medium text-sm">{fraudCase.caseNumber}</p>
               <p className="text-xs text-gray-600">{fraudCase.customerName}</p>
               <p className="text-xs text-gray-500">Priority: {fraudCase.priority}</p>
-
             </div>
             <StatusBadge status={fraudCase.status} />
           </div>
