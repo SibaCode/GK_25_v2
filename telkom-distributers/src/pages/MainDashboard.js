@@ -16,6 +16,8 @@ import { RecentFraudSection } from "../components/sections/RecentFraudSection";
 import { SummarySection } from "../components/sections/SummarySection";
 import { RecentEWasteSection } from "../components/sections/RecentEWasteSection";
 import { RecentLearningSection } from "../components/sections/RecentLearningSection";
+import { QuickActionsSection } from "../components/sections/QuickActionsSection";
+import { CommunitySection } from "../components/sections/CommunitySection";
 
 import { AddFraudCaseModal } from "../components/modals/AddFraudCaseModal";
 import { AddEWasteModal } from "../components/modals/AddEWasteModal";
@@ -93,6 +95,19 @@ const MainDashboard = () => {
             <RecentLearningSection />
            
           </div>
+
+
+      {/* Quick Actions & Community */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Quick Actions */}
+        <QuickActionsSection />
+           
+
+        {/* Community Preview */}
+        <CommunitySection />
+
+      </div>
+  
         </div>
       </div>
     </div>
