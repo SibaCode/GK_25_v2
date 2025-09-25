@@ -38,13 +38,15 @@ export const RecentFraudSection = () => {
     <Card className="shadow-lg">
       <CardHeader className="flex items-center justify-between pb-4">
         <CardTitle className="flex items-center gap-2 text-lg font-semibold">
-          <Shield className="w-5 h-5 text-yellow-500" />
+          <Shield className="w-5 h-5 text-primary" />
           Recent Fraud Cases
         </CardTitle>
         <Link to="/fraud">
-          <Button variant="ghost" size="sm">
-            View All <ArrowRight className="w-4 h-4 ml-1" />
-          </Button>
+        <Button
+            className="flex items-center gap-1 px-3 py-1 text-sm font-medium bg-blue-100 text-blue-700 hover:bg-blue-200 hover:shadow transition-all rounded"
+        >
+            View All <ArrowRight className="w-4 h-4" />
+        </Button>
         </Link>
       </CardHeader>
 
@@ -76,6 +78,7 @@ export const RecentFraudSection = () => {
         />
       </CardContent>
     </Card>
+    
   );
 };
 

@@ -14,6 +14,7 @@ import Sidebar from "../components/Sidebar";
 import Header from "../components/Header";
 import { RecentFraudSection } from "../components/sections/RecentFraudSection";
 import { SummarySection } from "../components/sections/SummarySection";
+import { RecentEWasteSection } from "../components/sections/RecentEWasteSection";
 
 import { AddFraudCaseModal } from "../components/modals/AddFraudCaseModal";
 import { AddEWasteModal } from "../components/modals/AddEWasteModal";
@@ -81,53 +82,11 @@ const MainDashboard = () => {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Fraud Cases */}
             <RecentFraudSection />
-            {/* <Card>
-              <CardHeader className="flex justify-between items-center">
-                <CardTitle className="flex items-center gap-2">
-                  <Shield className="w-5 h-5 text-warning"/> Recent Fraud Cases
-                </CardTitle>
-                <Link to="/fraud">
-                  <Button variant="ghost" size="sm">View All <ArrowRight className="w-4 h-4 ml-1"/></Button>
-                </Link>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {recentFraudCases.map(f => (
-                  <div key={f.id} className="flex justify-between p-2 bg-muted/30 rounded-lg hover:bg-muted/50 cursor-pointer">
-                    <div>
-                      <p className="text-sm font-medium">{f.id}</p>
-                      <p className="text-xs text-muted-foreground">{f.customer}</p>
-                    </div>
-                    <Badge className={getStatusColor(f.status)}>{f.status}</Badge>
-                  </div>
-                ))}
-              </CardContent>
-            </Card> */}
+          
 
             {/* E-Waste */}
-            <Card>
-              <CardHeader className="flex justify-between items-center">
-                <CardTitle className="flex items-center gap-2">
-                  <Recycle className="w-5 h-5 text-primary"/> Recent E-Waste Logs
-                </CardTitle>
-                <Link to="/e-waste">
-                  <Button variant="ghost" size="sm">View All <ArrowRight className="w-4 h-4 ml-1"/></Button>
-                </Link>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {recentEWasteLogs.map((log, i) => (
-                  <div key={i} className="flex justify-between p-2 bg-muted/30 rounded-lg hover:bg-muted/50 cursor-pointer">
-                    <div>
-                      <p className="text-sm font-medium">{log.customer}</p>
-                      <p className="text-xs text-muted-foreground">{log.items}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-medium text-primary">{log.weight}</p>
-                      <p className="text-xs text-accent">{log.reward}</p>
-                    </div>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
+            <RecentEWasteSection />
+
 
             {/* Learning Sessions */}
             <Card>
