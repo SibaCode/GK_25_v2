@@ -23,11 +23,12 @@ export const RecentEWasteSection = () => {
           <Recycle className="w-5 h-5 text-blue-500" />
           Recent E-Waste Logs
         </CardTitle>
-        <Link
-          to="/e-waste"
-          className="text-sm text-blue-500 hover:underline flex items-center gap-1"
+        <Link to="/e-waste">
+        <Button
+            className="flex items-center gap-1 px-3 py-1 text-sm font-medium bg-blue-100 text-blue-700 hover:bg-blue-200 hover:shadow transition-all rounded"
         >
-          View All <ArrowRight className="w-4 h-4" />
+            View All <ArrowRight className="w-4 h-4" />
+        </Button>
         </Link>
       </CardHeader>
 

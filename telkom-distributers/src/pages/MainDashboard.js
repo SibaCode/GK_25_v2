@@ -15,6 +15,7 @@ import Header from "../components/Header";
 import { RecentFraudSection } from "../components/sections/RecentFraudSection";
 import { SummarySection } from "../components/sections/SummarySection";
 import { RecentEWasteSection } from "../components/sections/RecentEWasteSection";
+import { RecentLearningSection } from "../components/sections/RecentLearningSection";
 
 import { AddFraudCaseModal } from "../components/modals/AddFraudCaseModal";
 import { AddEWasteModal } from "../components/modals/AddEWasteModal";
@@ -89,27 +90,8 @@ const MainDashboard = () => {
 
 
             {/* Learning Sessions */}
-            <Card>
-              <CardHeader className="flex justify-between items-center">
-                <CardTitle className="flex items-center gap-2">
-                  <GraduationCap className="w-5 h-5 text-secondary"/> Recent Learning
-                </CardTitle>
-                <Link to="/learning">
-                  <Button variant="ghost" size="sm">View All <ArrowRight className="w-4 h-4 ml-1"/></Button>
-                </Link>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {recentLearningSessions.map((s,i) => (
-                  <div key={i} className="p-2 bg-muted/30 rounded-lg hover:bg-muted/50 cursor-pointer">
-                    <div className="flex justify-between">
-                      <p className="text-sm font-medium">{s.distributor}</p>
-                      <span className="text-xs text-muted-foreground">{s.timestamp}</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">{s.course}</p>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
+            <RecentLearningSection />
+           
           </div>
         </div>
       </div>
