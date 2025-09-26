@@ -7,6 +7,8 @@ import Community from "./pages/Community";
 import Reports from "./pages/Reports";
 import SalesManagement from "./pages/SalesManagement";
 import PromotionsManagement from "./pages/PromotionsManagement";
+import SurveysManagement from "./pages/SurveysManagement";
+
 function App() {
   return (
     <Router>
@@ -19,6 +21,8 @@ function App() {
         <Route path="/reports" element={<Reports />} />
         <Route path="/sales" element={<SalesManagement />} />
         <Route path="/promotions" element={<PromotionsManagement />} />
+        <Route path="/surveys" element={<SurveysManagement />} />
+
 
       </Routes>
     </Router>
