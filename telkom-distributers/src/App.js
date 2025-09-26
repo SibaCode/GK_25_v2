@@ -2,12 +2,12 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import MainDashboard from "./pages/MainDashboard";
 import FraudManagement from "./pages/FraudManagement";
 import EWasteManagement from "./pages/EWasteManagement";
-import LearningHub from "./pages/LearningHub";
 import Community from "./pages/Community";
 import Reports from "./pages/Reports";
 import SalesManagement from "./pages/SalesManagement";
 import PromotionsManagement from "./pages/PromotionsManagement";
 import SurveysManagement from "./pages/SurveysManagement";
+import LearningHubManagement from "./pages/LearningHubManagement";
 
 function App() {
   return (
@@ -16,7 +16,7 @@ function App() {
         <Route path="/" element={<MainDashboard />} />
         <Route path="/fraud" element={<FraudManagement />} />
         <Route path="/e-waste" element={<EWasteManagement />} />
-        <Route path="/learning" element={<LearningHub />} />
+        <Route path="/learning" element={<LearningHubManagement />} />
         <Route path="/community" element={<Community />} />
         <Route path="/reports" element={<Reports />} />
         <Route path="/sales" element={<SalesManagement />} />

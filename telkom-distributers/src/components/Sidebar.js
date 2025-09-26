@@ -16,7 +16,8 @@
 // }
 import React from "react";
 import { Link } from "react-router-dom";
-import { LayoutDashboard, Shield, Recycle, GraduationCap, Users, TrendingUp } from "lucide-react";
+import { LayoutDashboard, Shield, Recycle, GraduationCap, Users, TrendingUp, DollarSign } from "lucide-react";
+import { CgAwards } from "react-icons/cg";
 
 const Sidebar = () => {
   return (
@@ -25,6 +26,12 @@ const Sidebar = () => {
       <nav className="flex-1 p-4 space-y-2">
         <Link className="flex items-center gap-2 p-2 hover:bg-primary/10 rounded" to="/">
           <LayoutDashboard className="w-5 h-5 text-primary" /> Dashboard
+        </Link>
+        <Link className="flex items-center gap-2 p-2 hover:bg-primary/10 rounded" to="/sales">
+          <DollarSign className="w-5 h-5 text-primary" /> Sales
+        </Link>
+        <Link className="flex items-center gap-2 p-2 hover:bg-primary/10 rounded" to="/promotions">
+          <CgAwards className="w-5 h-5 text-primary" /> Promotions
         </Link>
         <Link className="flex items-center gap-2 p-2 hover:bg-primary/10 rounded" to="/fraud">
           <Shield className="w-5 h-5 text-warning" /> Fraud Management

@@ -1,30 +1,81 @@
-// src/services/learningHubService.js
+import { db } from "../firebase";
+import { collection, addDoc, doc, onSnapshot, updateDoc, query, orderBy } from "firebase/firestore";
 
-// For now, using mock data. Later you can replace with API calls.
-let assignedCourses = [
-    { id: 1, title: "Fraud Prevention Basics", region: "North", distributorId: 101, date: "2025-09-30" },
-    { id: 2, title: "E-Waste Management", region: "East", distributorId: 102, date: "2025-10-02" },
-  ];
-  
-  let recentSessions = [
-    { id: 1, distributorId: 101, course: "Fraud Prevention Basics", participants: 12, badges: 3, timestamp: "2025-09-20" },
-    { id: 2, distributorId: 102, course: "E-Waste Management", participants: 8, badges: 2, timestamp: "2025-09-22" },
-  ];
-  
-  export const getAssignedCourses = (distributorId) => {
-    return assignedCourses.filter(course => course.distributorId === distributorId);
-  };
-  
-  export const addLearningSession = (sessionData) => {
-    const newSession = {
-      id: recentSessions.length + 1,
+// Add a new learning session/course
+export const addLearningSession = async (sessionData) => {
+  try {
+    const docRef = await addDoc(collection(db, "learningHubSessions"), {
       ...sessionData,
-    };
-    recentSessions.push(newSession);
-    return newSession;
-  };
-  
-  export const getRecentSessions = (distributorId) => {
-    return recentSessions.filter(session => session.distributorId === distributorId);
-  };
-  
+      createdAt: new Date(),
+    });
+    return docRef.id;
+  } catch (error) {
+    console.error("Failed to add learning session:", error);
+    throw error;
+  }
+};
+
+// Get all assigned courses
+export const getAssignedCourses = async () => {
+  try {
+    const q = query(collection(db, "learningHubSessions"), orderBy("createdAt", "desc"));
+    const snapshot = await onSnapshot(q, (snap) => {
+      const courses = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      return courses;
+    });
+  } catch (error) {
+    console.error("Failed to fetch assigned courses:", error);
+    throw error;
+  }
+};
+
+// Get recent learning sessions
+export const getRecentSessions = async () => {
+  try {
+    const q = query(collection(db, "learningHubSessions"), orderBy("createdAt", "desc"));
+    const snapshot = await onSnapshot(q, (snap) => {
+      const sessions = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      return sessions;
+    });
+  } catch (error) {
+    console.error("Failed to fetch recent sessions:", error);
+    throw error;
+  }
+};
+
+// Assign a course to a distributor
+export const assignCourse = async (courseId, distributor) => {
+  try {
+    const courseRef = doc(db, "learningHubSessions", courseId);
+    await updateDoc(courseRef, { distributor });
+  } catch (error) {
+    console.error("Failed to assign course:", error);
+    throw error;
+  }
+};
+
+// Update course details (attendance, status, materials)
+export const updateCourse = async (courseId, updateData) => {
+  try {
+    const courseRef = doc(db, "learningHubSessions", courseId);
+    await updateDoc(courseRef, updateData);
+  } catch (error) {
+    console.error("Failed to update course:", error);
+    throw error;
+  }
+};
+
+// Subscribe to real-time updates on assignments
+export const subscribeAssignments = (callback) => {
+  try {
+    const q = query(collection(db, "learningHubSessions"), orderBy("createdAt", "desc"));
+    const unsubscribe = onSnapshot(q, (snap) => {
+      const courses = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      callback(courses);
+    });
+    return unsubscribe;
+  } catch (error) {
+    console.error("Failed to subscribe to assignments:", error);
+    throw error;
+  }
+};
