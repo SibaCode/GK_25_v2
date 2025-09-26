@@ -5,7 +5,8 @@ import EWasteManagement from "./pages/EWasteManagement";
 import LearningHub from "./pages/LearningHub";
 import Community from "./pages/Community";
 import Reports from "./pages/Reports";
-
+import SalesManagement from "./pages/SalesManagement";
+import PromotionsManagement from "./pages/PromotionsManagement";
 function App() {
   return (
     <Router>
@@ -16,6 +17,9 @@ function App() {
         <Route path="/learning" element={<LearningHub />} />
         <Route path="/community" element={<Community />} />
         <Route path="/reports" element={<Reports />} />
+        <Route path="/sales" element={<SalesManagement />} />
+        <Route path="/promotions" element={<PromotionsManagement />} />
+
       </Routes>
     </Router>
   );
