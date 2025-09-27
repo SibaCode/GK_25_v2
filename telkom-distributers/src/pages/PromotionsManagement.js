@@ -4,12 +4,14 @@ import Sidebar from "../components/Sidebar";
 import Header from "../components/Header";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
-import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Award, Search } from "lucide-react";
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Legend } from "recharts";
 
 import { db } from "../firebase";
 import { collection, onSnapshot, query, orderBy } from "firebase/firestore";
+
+const COLORS = ["#4ade80", "#facc15", "#f87171"]; // green, yellow, red
 
 const PromotionsManagement = () => {
     const [promotions, setPromotions] = useState([]);
@@ -18,28 +20,47 @@ const PromotionsManagement = () => {
     useEffect(() => {
         const q = query(collection(db, "promotions"), orderBy("validUntil", "asc"));
         const unsubscribe = onSnapshot(q, (snapshot) => {
-            const promos = snapshot.docs.map((doc) => ({
-                id: doc.id,
-                ...doc.data(),
-            }));
+            const promos = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
             setPromotions(promos);
         });
 
         return () => unsubscribe();
     }, []);
 
+    // Parse conversion string "70%" -> 70
+    const parseConversion = (conv) => (conv ? parseFloat(conv.replace("%", "")) : 0);
+
     // Metrics
     const totalPromotions = promotions.length;
-    const activePromotions = promotions.filter((p) => p.status === "active").length;
+    const activePromotions = promotions.filter((p) => p.active === "true").length;
     const upcomingExpiring = promotions.filter((p) => {
         const today = new Date();
         const validDate = new Date(p.validUntil);
         const diffDays = (validDate - today) / (1000 * 60 * 60 * 24);
         return diffDays > 0 && diffDays <= 7;
     }).length;
-    const topConversion = promotions.length
-        ? Math.max(...promotions.map((p) => p.conversions || 0))
-        : 0;
+    const avgConversion =
+        promotions.length > 0
+            ? promotions.reduce((sum, p) => sum + parseConversion(p.conversions), 0) / promotions.length
+            : 0;
+    const topPromotion = promotions.reduce(
+        (prev, curr) => (parseConversion(curr.conversions) > parseConversion(prev.conversions) ? curr : prev),
+        promotions[0] || {}
+    );
+
+    // Category distribution for bar chart
+    const categoryCounts = {};
+    promotions.forEach((p) => {
+        const cat = p.category || "Other";
+        categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
+    });
+    const categoryData = Object.keys(categoryCounts).map((key) => ({ category: key, count: categoryCounts[key] }));
+
+    // Active vs Inactive for pie chart
+    const pieData = [
+        { name: "Active", value: activePromotions },
+        { name: "Inactive", value: totalPromotions - activePromotions },
+    ];
 
     // Filtered promotions
     const filteredPromotions = promotions.filter(
@@ -53,7 +74,6 @@ const PromotionsManagement = () => {
             <Sidebar />
             <div className="flex-1 flex flex-col">
                 <Header />
-
                 <div className="p-6 space-y-6 overflow-auto">
                     {/* Page Header */}
                     <div className="flex items-center justify-between">
@@ -62,39 +82,81 @@ const PromotionsManagement = () => {
                                 <Award className="w-8 h-8 text-primary" />
                                 Promotions Management
                             </h1>
-                            <p className="text-muted-foreground mt-2">
-                                View all promotions provided by Telkom
-                            </p>
+                            <p className="text-muted-foreground mt-2">View all promotions provided by Telkom</p>
                         </div>
                     </div>
 
                     {/* Metrics */}
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                         <Card>
                             <CardContent className="p-6">
                                 <p className="text-sm text-muted-foreground">Total Promotions</p>
                                 <p className="text-2xl font-bold">{totalPromotions}</p>
                             </CardContent>
                         </Card>
-
                         <Card>
                             <CardContent className="p-6">
                                 <p className="text-sm text-muted-foreground">Active Promotions</p>
                                 <p className="text-2xl font-bold text-success">{activePromotions}</p>
                             </CardContent>
                         </Card>
-
                         <Card>
                             <CardContent className="p-6">
                                 <p className="text-sm text-muted-foreground">Expiring Soon (7 days)</p>
                                 <p className="text-2xl font-bold text-warning">{upcomingExpiring}</p>
                             </CardContent>
                         </Card>
-
                         <Card>
                             <CardContent className="p-6">
-                                <p className="text-sm text-muted-foreground">Top Conversion</p>
-                                <p className="text-2xl font-bold text-accent">{topConversion}</p>
+                                <p className="text-sm text-muted-foreground">Avg Conversion</p>
+                                <p className="text-2xl font-bold text-accent">{avgConversion.toFixed(1)}%</p>
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardContent className="p-6">
+                                <p className="text-sm text-muted-foreground">Top Promotion</p>
+                                <p className="text-2xl font-bold text-foreground">{topPromotion?.title || "N/A"}</p>
+                                <p className="text-xs text-muted-foreground">{topPromotion?.conversions || "0%"}</p>
+                            </CardContent>
+                        </Card>
+                    </div>
+
+                    {/* Charts */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Pie Chart: Active vs Inactive */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Status Breakdown</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <ResponsiveContainer width="100%" height={200}>
+                                    <PieChart>
+                                        <Pie data={pieData} dataKey="value" nameKey="name" outerRadius={70} fill="#8884d8" label>
+                                            {pieData.map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                            ))}
+                                        </Pie>
+                                        <Tooltip />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                            </CardContent>
+                        </Card>
+
+                        {/* Bar Chart: Promotions per Category */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Promotions per Category</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <ResponsiveContainer width="100%" height={200}>
+                                    <BarChart data={categoryData}>
+                                        <XAxis dataKey="category" />
+                                        <YAxis />
+                                        <Tooltip />
+                                        <Legend />
+                                        <Bar dataKey="count" fill="#4ade80" />
+                                    </BarChart>
+                                </ResponsiveContainer>
                             </CardContent>
                         </Card>
                     </div>
@@ -127,20 +189,16 @@ const PromotionsManagement = () => {
                                         >
                                             <div className="flex justify-between items-start mb-3">
                                                 <Badge
-                                                    variant={promo.status === "active" ? "success" : "warning"}
+                                                    variant={promo.active === "true" ? "success" : "warning"}
                                                     className="text-xs"
                                                 >
-                                                    {promo.status === "active" ? "Active" : "Limited Time"}
+                                                    {promo.active === "true" ? "Active" : "Limited Time"}
                                                 </Badge>
-                                                <span className="text-xl font-bold text-accent">
-                                                    {promo.discount}
-                                                </span>
+                                                <span className="text-xl font-bold text-accent">{promo.discount}</span>
                                             </div>
 
                                             <h4 className="font-semibold text-sm mb-2">{promo.title}</h4>
-                                            <p className="text-xs text-muted-foreground mb-3">
-                                                {promo.description}
-                                            </p>
+                                            <p className="text-xs text-muted-foreground mb-3">{promo.description}</p>
 
                                             <div className="space-y-2 text-xs">
                                                 <div className="flex justify-between">
@@ -151,18 +209,15 @@ const PromotionsManagement = () => {
                                                     <span className="text-muted-foreground">Valid Until:</span>
                                                     <span className="font-medium">{promo.validUntil}</span>
                                                 </div>
-/
+                                                <div className="flex justify-between">
+                                                    <span className="text-muted-foreground">Conversions:</span>
+                                                    <span className="font-medium">{promo.conversions}</span>
+                                                </div>
                                             </div>
-
-                                            <Button className="w-full mt-3" variant="accent" size="sm">
-                                                Promote Now
-                                            </Button>
                                         </div>
                                     ))
                                 ) : (
-                                    <p className="text-muted-foreground text-center col-span-full">
-                                        No promotions available.
-                                    </p>
+                                    <p className="text-muted-foreground text-center col-span-full">No promotions available.</p>
                                 )}
                             </div>
                         </CardContent>
