@@ -1,106 +1,100 @@
-import React, { useState } from "react";
-import { db } from "../../firebase";
-import { collection, addDoc } from "firebase/firestore";
-
-const detectFraud = (activity) => {
-    if (activity.duplicateSIM || activity.spikes > 5) return { status: "High Risk", recommendation: "Block SIM" };
-    if (activity.spikes > 2) return { status: "Medium Risk", recommendation: "Monitor / Review" };
-    return { status: "Low Risk", recommendation: "No Action Needed" };
-};
+import { useState } from "react";
 
 const AddSIMFraudModal = ({ onAdd }) => {
     const [open, setOpen] = useState(false);
-    const [form, setForm] = useState({
-        customerName: "",
-        simNumber: "",
-        distributor: "",
-        activity: { duplicateSIM: false, spikes: 0 },
+    const [formData, setFormData] = useState({
+        phoneNumber: "",
+        customerID: "",
+        reportedIssue: "",
     });
 
-    const handleSubmit = async () => {
-        const aiResult = detectFraud(form.activity);
-        const report = {
-            ...form,
-            status: aiResult.status,
-            recommendation: aiResult.recommendation,
-            actionsTaken: [],
-            date: new Date(),
-        };
-        await addDoc(collection(db, "fraudReports"), report);
-        onAdd(report);
-        setForm({
-            customerName: "",
-            simNumber: "",
-            distributor: "",
-            activity: { duplicateSIM: false, spikes: 0 },
-        });
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        const { phoneNumber, customerID } = formData;
+
+        if (!phoneNumber || !customerID) {
+            alert("Please fill in all required fields");
+            return;
+        }
+
+        if (onAdd) onAdd(formData);
+
+        alert(`SIM fraud report for ${phoneNumber} submitted successfully`);
+
+        setFormData({ phoneNumber: "", customerID: "", reportedIssue: "" });
         setOpen(false);
     };
 
     return (
         <>
             <button
+                className="px-4 py-2 bg-blue-600 text-white rounded"
                 onClick={() => setOpen(true)}
-                className="bg-blue-600 text-white px-4 py-2 rounded"
             >
                 Report SIM Fraud
             </button>
 
             {open && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                    <div className="bg-white p-6 rounded shadow-md w-full max-w-md">
+                <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
+                    <div className="bg-white p-6 rounded w-96">
                         <h2 className="text-xl font-bold mb-4">Report SIM Fraud</h2>
-                        <input
-                            placeholder="Customer Name"
-                            className="w-full border p-2 mb-2"
-                            value={form.customerName}
-                            onChange={(e) => setForm({ ...form, customerName: e.target.value })}
-                        />
-                        <input
-                            placeholder="SIM Number"
-                            className="w-full border p-2 mb-2"
-                            value={form.simNumber}
-                            onChange={(e) => setForm({ ...form, simNumber: e.target.value })}
-                        />
-                        <input
-                            placeholder="Distributor"
-                            className="w-full border p-2 mb-2"
-                            value={form.distributor}
-                            onChange={(e) => setForm({ ...form, distributor: e.target.value })}
-                        />
-                        <input
-                            type="number"
-                            placeholder="Unusual activity spikes"
-                            className="w-full border p-2 mb-2"
-                            value={form.activity.spikes}
-                            onChange={(e) =>
-                                setForm({ ...form, activity: { ...form.activity, spikes: parseInt(e.target.value) } })
-                            }
-                        />
-                        <label className="flex items-center mb-2 gap-2">
-                            <input
-                                type="checkbox"
-                                checked={form.activity.duplicateSIM}
-                                onChange={(e) =>
-                                    setForm({ ...form, activity: { ...form.activity, duplicateSIM: e.target.checked } })
-                                }
-                            />
-                            Duplicate SIM Usage
-                        </label>
-                        <div className="flex justify-end gap-2 mt-4">
-                            <button
-                                className="px-4 py-2 bg-gray-300 rounded"
-                                onClick={() => setOpen(false)}
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                className="px-4 py-2 bg-blue-600 text-white rounded"
-                                onClick={handleSubmit}
-                            >
-                                Submit
-                            </button>
-                        </div>
+
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            <div>
+                                <label className="block mb-1 font-medium">Phone Number *</label>
+                                <input
+                                    type="tel"
+                                    className="w-full border p-2 rounded"
+                                    value={formData.phoneNumber}
+                                    onChange={(e) =>
+                                        setFormData({ ...formData, phoneNumber: e.target.value })
+                                    }
+                                    placeholder="e.g., 0711234567"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block mb-1 font-medium">Customer ID *</label>
+                                <input
+                                    type="text"
+                                    className="w-full border p-2 rounded"
+                                    value={formData.customerID}
+                                    onChange={(e) =>
+                                        setFormData({ ...formData, customerID: e.target.value })
+                                    }
+                                    placeholder="Enter customer ID"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block mb-1 font-medium">Reported Issue</label>
+                                <textarea
+                                    className="w-full border p-2 rounded"
+                                    rows={3}
+                                    value={formData.reportedIssue}
+                                    onChange={(e) =>
+                                        setFormData({ ...formData, reportedIssue: e.target.value })
+                                    }
+                                    placeholder="Describe the reported fraud concern..."
+                                />
+                            </div>
+
+                            <div className="flex justify-end space-x-2">
+                                <button
+                                    type="button"
+                                    className="px-4 py-2 border rounded"
+                                    onClick={() => setOpen(false)}
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="px-4 py-2 bg-blue-600 text-white rounded"
+                                >
+                                    Submit
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             )}
