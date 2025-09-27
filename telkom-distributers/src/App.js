@@ -8,6 +8,7 @@ import SalesManagement from "./pages/SalesManagement";
 import PromotionsManagement from "./pages/PromotionsManagement";
 import SurveysManagement from "./pages/SurveysManagement";
 import LearningHubManagement from "./pages/LearningHubManagement";
+import SurveyPage from "./pages/SurveyPage";
 
 function App() {
   return (
@@ -22,6 +23,7 @@ function App() {
         <Route path="/sales" element={<SalesManagement />} />
         <Route path="/promotions" element={<PromotionsManagement />} />
         <Route path="/surveys" element={<SurveysManagement />} />
+        <Route path="/survey/:id" element={<SurveyPage />} />
 
 
       </Routes>
