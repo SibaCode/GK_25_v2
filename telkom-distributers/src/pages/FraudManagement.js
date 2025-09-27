@@ -7,7 +7,7 @@ import { Input } from "../components/ui/input";
 import { Button } from "../components/ui/button";
 import {
     Shield, Brain, Phone, AlertTriangle, CheckCircle,
-    XCircle, Clock, Ban, RefreshCw, Flag
+    XCircle, Clock, Ban, RefreshCw, Flag, Users, Activity
 } from "lucide-react";
 import { db } from "../firebase";
 import { collection, onSnapshot, addDoc, query, orderBy } from "firebase/firestore";
@@ -91,9 +91,78 @@ const FraudManagement = () => {
             <div className="flex-1 flex flex-col">
                 <Header />
                 <div className="p-6 space-y-6 overflow-auto">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h1 className="text-3xl font-bold flex items-center gap-3">
+                                <Shield className="w-8 h-8 text-primary" />
+                                Sales Management
+                            </h1>
+                            <p className="text-muted-foreground mt-2">AI-powered fraud detection and risk assessment</p>
+                        </div>
+                        <AddFraudModal />
+                    </div>
 
                     {/* Quick SIM Verification */}
-                    <AddFraudModal />
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center">
+                                <Activity className="h-5 w-5 mr-2" />
+                                Fraud Risk Overview
+                            </CardTitle>
+                            <p className="text-sm text-muted-foreground mt-1">Real-time AI risk assessment</p>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                {/* High Risk */}
+                                <div className={`p-4 rounded-lg ${fraudCases.some(f => f.riskScore >= 80) ? 'bg-red-100 border border-red-500' : 'bg-destructive/10'}`}>
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <p className="text-sm font-medium text-red-600">High Risk</p>
+                                            <p className="text-2xl font-bold text-red-700">{fraudCases.filter(f => f.riskScore >= 80).length}</p>
+                                        </div>
+                                        <AlertTriangle className="h-8 w-8 text-red-700" />
+                                    </div>
+                                    <p className="text-xs text-muted-foreground mt-2">Requires immediate action</p>
+                                </div>
+
+                                {/* Medium Risk */}
+                                <div className="p-4 bg-warning/10 rounded-lg">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <p className="text-sm font-medium text-warning">Medium Risk</p>
+                                            <p className="text-2xl font-bold text-warning">{fraudCases.filter(f => f.riskScore >= 60 && f.riskScore < 80).length}</p>
+                                        </div>
+                                        <Clock className="h-8 w-8 text-warning" />
+                                    </div>
+                                    <p className="text-xs text-muted-foreground mt-2">Monitor closely</p>
+                                </div>
+
+                                {/* Low Risk */}
+                                <div className="p-4 bg-success/10 rounded-lg">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <p className="text-sm font-medium text-success">Low Risk</p>
+                                            <p className="text-2xl font-bold text-success">{fraudCases.filter(f => f.riskScore < 60).length}</p>
+                                        </div>
+                                        <CheckCircle className="h-8 w-8 text-success" />
+                                    </div>
+                                    <p className="text-xs text-muted-foreground mt-2">Normal activity</p>
+                                </div>
+
+                                {/* Total SIMs */}
+                                <div className="p-4 bg-accent/10 rounded-lg">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <p className="text-sm font-medium">Total SIMs</p>
+                                            <p className="text-2xl font-bold">{fraudCases.length}</p>
+                                        </div>
+                                        <Users className="h-8 w-8 text-primary" />
+                                    </div>
+                                    <p className="text-xs text-muted-foreground mt-2">Under monitoring</p>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
 
                     {/* Active Fraud Cases */}
                     <Card>
