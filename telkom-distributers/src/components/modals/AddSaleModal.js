@@ -33,8 +33,7 @@ export function AddSaleModal({ trigger, onAddEntry, availableProducts = [] }) {
 
     const onSubmit = async (data) => {
         try {
-            // Assign distributor (hardcoded or current user)
-            const distributor = "SibaTheDev";
+            const distributor = "SibaTheDev"; // or current user
             const newSale = { ...data, distributor, total, status: "Pending" };
             await addSale(newSale);
             onAddEntry && onAddEntry(newSale);
@@ -72,14 +71,19 @@ export function AddSaleModal({ trigger, onAddEntry, availableProducts = [] }) {
                                 className="border-gray-300 rounded-lg shadow-sm p-2 focus:outline-none focus:ring-1 focus:ring-blue-500"
                             >
                                 <option value="">Select a product</option>
-                                {availableProducts.map((p) => (
-                                    <option key={p.id || p} value={p.name || p}>
-                                        {p.name || p}
-                                    </option>
-                                ))}
+                                {availableProducts.map((p, idx) => {
+                                    const name = p?.name || p;
+                                    return (
+                                        <option key={p?.id || idx} value={name}>
+                                            {name}
+                                        </option>
+                                    );
+                                })}
                             </select>
                             {form.formState.errors.product && (
-                                <span className="text-red-500 text-sm mt-1">{form.formState.errors.product.message}</span>
+                                <span className="text-red-500 text-sm mt-1">
+                                    {form.formState.errors.product.message}
+                                </span>
                             )}
                         </div>
 

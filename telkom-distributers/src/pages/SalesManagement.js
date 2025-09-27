@@ -1,19 +1,17 @@
-// SalesManagement.js
 import React, { useEffect, useState } from "react";
 import Sidebar from "../components/Sidebar";
 import Header from "../components/Header";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import { Input } from "../components/ui/input";
-import { DollarSign, Search } from "lucide-react";
-
+import { DollarSign, Search, TrendingUp } from "lucide-react";
 import { AddSaleModal } from "../components/modals/AddSaleModal";
 import { SaleDetailsModal } from "../components/modals/SaleDetailsModal";
-
 import { db } from "../firebase";
 import { collection, onSnapshot, query, orderBy, doc, updateDoc } from "firebase/firestore";
+import { PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, Tooltip, Legend, BarChart, Bar } from "recharts";
 
-// Helper for badge colors
+// Badge colors
 const getStatusColor = (status) => {
     switch (status) {
         case "Pending": return "bg-warning text-warning-foreground";
@@ -27,7 +25,6 @@ const SalesManagement = () => {
     const [sales, setSales] = useState([]);
     const [searchTerm, setSearchTerm] = useState("");
 
-    // Example product list for dropdown in modal
     const availableProducts = [
         { id: 1, name: "SIM Card" },
         { id: 2, name: "Router" },
@@ -45,32 +42,29 @@ const SalesManagement = () => {
         return () => unsubscribe();
     }, []);
 
+    // Handle add sale (updates state immediately)
     const handleAddSale = async (saleData) => {
-        try {
-            const { addSale } = await import("../../services/salesService");
-            await addSale(saleData);
-        } catch (error) {
-            console.error("Failed to add sale:", error);
-        }
+        setSales(prev => [...prev, saleData]);
     };
 
     const handleStatusChange = async (saleId, newStatus) => {
         try {
             const saleRef = doc(db, "sales", saleId);
             await updateDoc(saleRef, { status: newStatus });
+            setSales(prev => prev.map(s => s.id === saleId ? { ...s, status: newStatus } : s));
         } catch (error) {
-            console.error("Failed to update status:", error);
+            console.error(error);
         }
     };
 
-    // Metrics calculations
+    // Metrics
     const totalRevenue = sales.reduce((sum, sale) => sum + (sale.total || 0), 0);
     const completedSales = sales.filter((s) => s.status === "Completed").length;
     const pendingSales = sales.filter((s) => s.status === "Pending").length;
     const cancelledSales = sales.filter((s) => s.status === "Cancelled").length;
     const avgSaleValue = sales.length ? totalRevenue / sales.length : 0;
 
-    // Top product sold by quantity
+    // Top product
     const productQuantities = {};
     sales.forEach((sale) => {
         if (sale.product) {
@@ -82,14 +76,34 @@ const SalesManagement = () => {
         ""
     );
 
-    // Highest single sale
+    // Highest sale
     const highestSale = sales.reduce((prev, curr) => (curr.total > (prev.total || 0) ? curr : prev), {});
+
+    // Chart datasets
+    const statusData = [
+        { name: "Completed", value: completedSales },
+        { name: "Pending", value: pendingSales },
+        { name: "Cancelled", value: cancelledSales }
+    ];
+
+    const salesOverTimeData = Object.values(
+        sales.reduce((acc, sale) => {
+            const dateKey = new Date(sale.date?.toDate?.() || sale.date).toLocaleDateString();
+            acc[dateKey] = acc[dateKey] || { date: dateKey, total: 0 };
+            acc[dateKey].total += sale.total || 0;
+            return acc;
+        }, {})
+    );
+
+    const topProductsData = Object.entries(productQuantities).map(([name, quantity]) => ({ name, quantity }));
 
     const filteredSales = sales.filter(
         (sale) =>
             sale.product?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             sale.distributor?.toLowerCase().includes(searchTerm.toLowerCase())
     );
+
+    const COLORS = ["#28a745", "#ffc107", "#dc3545"]; // Completed, Pending, Cancelled
 
     return (
         <div className="flex h-screen">
@@ -100,7 +114,7 @@ const SalesManagement = () => {
                     {/* Page Header */}
                     <div className="flex items-center justify-between">
                         <div>
-                            <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
+                            <h1 className="text-3xl font-bold flex items-center gap-3">
                                 <DollarSign className="w-8 h-8 text-primary" />
                                 Sales Management
                             </h1>
@@ -109,80 +123,69 @@ const SalesManagement = () => {
                         <AddSaleModal onAddEntry={handleAddSale} availableProducts={availableProducts} />
                     </div>
 
-                    {/* Metrics */}
+                    {/* Summary Cards */}
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <Card><CardContent className="p-6 flex justify-between"><div><p>Total Sales</p><p className="text-2xl font-bold">{sales.length}</p></div><DollarSign className="w-6 h-6 text-primary" /></CardContent></Card>
+                        <Card><CardContent className="p-6 flex justify-between"><div><p>Total Revenue</p><p className="text-2xl font-bold text-success">R {totalRevenue.toFixed(2)}</p></div><DollarSign className="w-6 h-6 text-success" /></CardContent></Card>
+                        <Card><CardContent className="p-6 flex justify-between"><div><p>Average Sale Value</p><p className="text-2xl font-bold">R {avgSaleValue.toFixed(2)}</p></div><TrendingUp className="w-6 h-6 text-accent" /></CardContent></Card>
+                        <Card><CardContent className="p-6"><p>Top Product Sold</p><p className="text-2xl font-bold">{topProduct || "N/A"}</p></CardContent></Card>
+                        <Card><CardContent className="p-6"><p>Completed Sales</p><p className="text-2xl font-bold text-success">{completedSales}</p></CardContent></Card>
+                        <Card><CardContent className="p-6"><p>Pending Sales</p><p className="text-2xl font-bold text-warning">{pendingSales}</p></CardContent></Card>
+                        <Card><CardContent className="p-6"><p>Cancelled Sales</p><p className="text-2xl font-bold text-destructive">{cancelledSales}</p></CardContent></Card>
                         <Card>
-                            <CardContent className="p-6 flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm text-muted-foreground">Total Sales</p>
-                                    <p className="text-2xl font-bold text-foreground">{sales.length}</p>
-                                </div>
-                                <DollarSign className="w-6 h-6 text-primary" />
+                            <CardContent className="p-6">
+                                <p>Highest Sale</p>
+                                {highestSale && highestSale.total ? (
+                                    <div>
+                                        <p className="text-2xl font-bold text-success">R {highestSale.total.toFixed(2)}</p>
+                                        <p className="text-sm text-muted-foreground">{highestSale.product} • {highestSale.distributor}</p>
+                                    </div>
+                                ) : <p className="text-sm">No sales yet</p>}
+                            </CardContent>
+                        </Card>
+                    </div>
+
+                    {/* Charts */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {/* Status Pie */}
+                        <Card>
+                            <CardHeader><CardTitle>Status Breakdown</CardTitle></CardHeader>
+                            <CardContent>
+                                <PieChart width={250} height={250}>
+                                    <Pie data={statusData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} fill="#8884d8" label>
+                                        {statusData.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                        ))}
+                                    </Pie>
+                                    <Tooltip />
+                                    <Legend />
+                                </PieChart>
                             </CardContent>
                         </Card>
 
+                        {/* Sales Over Time */}
                         <Card>
-                            <CardContent className="p-6 flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm text-muted-foreground">Total Revenue</p>
-                                    <p className="text-2xl font-bold text-success">R {totalRevenue.toFixed(2)}</p>
-                                </div>
-                                <DollarSign className="w-6 h-6 text-success" />
+                            <CardHeader><CardTitle>Sales Over Time</CardTitle></CardHeader>
+                            <CardContent>
+                                <LineChart width={300} height={250} data={salesOverTimeData}>
+                                    <XAxis dataKey="date" />
+                                    <YAxis />
+                                    <Tooltip />
+                                    <Line type="monotone" dataKey="total" stroke="#28a745" />
+                                </LineChart>
                             </CardContent>
                         </Card>
 
+                        {/* Top Products */}
                         <Card>
-                            <CardContent className="p-6 flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm text-muted-foreground">Completed Sales</p>
-                                    <p className="text-2xl font-bold text-accent">{completedSales}</p>
-                                </div>
-                                <DollarSign className="w-6 h-6 text-accent" />
-                            </CardContent>
-                        </Card>
-
-                        <Card>
-                            <CardContent className="p-6 flex flex-col justify-between">
-                                <div>
-                                    <p className="text-sm text-muted-foreground">Pending Sales</p>
-                                    <p className="text-2xl font-bold text-warning">{pendingSales}</p>
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        <Card>
-                            <CardContent className="p-6 flex flex-col justify-between">
-                                <div>
-                                    <p className="text-sm text-muted-foreground">Cancelled Sales</p>
-                                    <p className="text-2xl font-bold text-destructive">{cancelledSales}</p>
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        <Card>
-                            <CardContent className="p-6 flex flex-col justify-between">
-                                <div>
-                                    <p className="text-sm text-muted-foreground">Average Sale Value</p>
-                                    <p className="text-2xl font-bold text-foreground">R {avgSaleValue.toFixed(2)}</p>
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        <Card>
-                            <CardContent className="p-6 flex flex-col justify-between">
-                                <div>
-                                    <p className="text-sm text-muted-foreground">Top Product Sold</p>
-                                    <p className="text-2xl font-bold text-foreground">{topProduct || "N/A"}</p>
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        <Card>
-                            <CardContent className="p-6 flex flex-col justify-between">
-                                <div>
-                                    <p className="text-sm text-muted-foreground">Highest Sale</p>
-                                    <p className="text-2xl font-bold text-success">R {highestSale.total?.toFixed(2) || 0}</p>
-                                </div>
+                            <CardHeader><CardTitle>Top Products</CardTitle></CardHeader>
+                            <CardContent>
+                                <BarChart width={300} height={250} data={topProductsData}>
+                                    <XAxis dataKey="name" />
+                                    <YAxis />
+                                    <Tooltip />
+                                    <Bar dataKey="quantity" fill="#ffc107" />
+                                </BarChart>
                             </CardContent>
                         </Card>
                     </div>
@@ -200,55 +203,42 @@ const SalesManagement = () => {
                         </div>
                     </div>
 
-                    {/* Sales Records */}
+                    {/* Sales Table */}
                     <Card className="shadow-card">
-                        <CardHeader>
-                            <CardTitle>Sales Records</CardTitle>
-                        </CardHeader>
+                        <CardHeader><CardTitle>Sales Records</CardTitle></CardHeader>
                         <CardContent>
-                            <div className="space-y-4">
-                                {filteredSales.map((sale) => (
-                                    <div
-                                        key={sale.id}
-                                        className="p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors"
-                                    >
-                                        <div className="flex items-center justify-between mb-3">
-                                            <div className="flex items-center gap-3">
-                                                <h3 className="font-semibold text-foreground">{sale.product || "N/A"}</h3>
+                            <table className="w-full text-left border-collapse">
+                                <thead>
+                                    <tr className="border-b">
+                                        <th className="px-4 py-2">Date</th>
+                                        <th className="px-4 py-2">Distributor</th>
+                                        <th className="px-4 py-2">Product</th>
+                                        <th className="px-4 py-2">Quantity</th>
+                                        <th className="px-4 py-2">Price</th>
+                                        <th className="px-4 py-2">Total</th>
+                                        <th className="px-4 py-2">Status</th>
+                                        <th className="px-4 py-2">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {filteredSales.map((sale) => (
+                                        <tr key={sale.id} className="border-b hover:bg-muted/50">
+                                            <td className="px-4 py-2">{sale.date?.toDate ? sale.date.toDate().toLocaleString() : new Date(sale.date).toLocaleString()}</td>
+                                            <td className="px-4 py-2">{sale.distributor}</td>
+                                            <td className="px-4 py-2">{sale.product}</td>
+                                            <td className="px-4 py-2">{sale.quantity}</td>
+                                            <td className="px-4 py-2">R {sale.price?.toFixed(2)}</td>
+                                            <td className="px-4 py-2 text-success">R {sale.total?.toFixed(2)}</td>
+                                            <td className="px-4 py-2">
                                                 <Badge className={getStatusColor(sale.status)}>{sale.status}</Badge>
-                                            </div>
-                                            <span className="text-sm text-muted-foreground">
-                                                {sale.date?.toDate
-                                                    ? sale.date.toDate().toLocaleString()
-                                                    : new Date(sale.date).toLocaleString()}
-                                            </span>
-                                        </div>
-
-                                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-3">
-                                            <div>
-                                                <p className="text-sm text-muted-foreground">Quantity</p>
-                                                <p className="font-medium text-foreground">{sale.quantity || 0}</p>
-                                            </div>
-                                            <div>
-                                                <p className="text-sm text-muted-foreground">Price</p>
-                                                <p className="font-medium text-foreground">R {sale.price?.toFixed(2) || 0}</p>
-                                            </div>
-                                            <div>
-                                                <p className="text-sm text-muted-foreground">Total</p>
-                                                <p className="font-medium text-success">R {sale.total?.toFixed(2) || 0}</p>
-                                            </div>
-                                        </div>
-
-                                        <div className="flex gap-2">
-                                            <SaleDetailsModal
-                                                sale={sale}
-                                                onStatusChange={handleStatusChange}
-                                                trigger={<button className="px-3 py-1 border rounded-md text-sm">View Details</button>}
-                                            />
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
+                                            </td>
+                                            <td className="px-4 py-2">
+                                                <SaleDetailsModal sale={sale} onStatusChange={handleStatusChange} trigger={<button className="px-3 py-1 border rounded-md text-sm">View Details</button>} />
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
                         </CardContent>
                     </Card>
                 </div>
