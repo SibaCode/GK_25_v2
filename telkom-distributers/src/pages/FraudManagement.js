@@ -12,7 +12,7 @@ import {
 import { db } from "../firebase";
 import { collection, onSnapshot, addDoc, query, orderBy } from "firebase/firestore";
 import { useToast } from "../hooks/use-toast"; // Make sure this hook exists
-
+import AddFraudModal from "../components/modals/AddFraudModal"; // The modal we just created
 const FraudManagement = () => {
     const { toast } = useToast();
     const [fraudCases, setFraudCases] = useState([]);
@@ -93,39 +93,7 @@ const FraudManagement = () => {
                 <div className="p-6 space-y-6 overflow-auto">
 
                     {/* Quick SIM Verification */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center">
-                                <Shield className="h-5 w-5 mr-2" /> Quick SIM Verification
-                            </CardTitle>
-                            <p className="text-sm text-muted-foreground mt-1">Submit SIM fraud report</p>
-                        </CardHeader>
-                        <CardContent>
-                            <form className="space-y-4" onSubmit={handleAddReport}>
-                                <Input
-                                    placeholder="Phone Number"
-                                    value={newReport.phoneNumber}
-                                    onChange={e => setNewReport({ ...newReport, phoneNumber: e.target.value })}
-                                />
-                                <Input
-                                    placeholder="Customer Name"
-                                    value={newReport.customerName}
-                                    onChange={e => setNewReport({ ...newReport, customerName: e.target.value })}
-                                />
-                                <textarea
-                                    className="w-full p-2 border rounded-md text-sm text-foreground bg-background"
-                                    placeholder="Reported Issue"
-                                    rows={3}
-                                    value={newReport.reportedIssue}
-                                    onChange={e => setNewReport({ ...newReport, reportedIssue: e.target.value })}
-                                />
-                                <Button type="submit" className="w-full flex items-center justify-center space-x-2">
-                                    <Brain className="h-4 w-4" />
-                                    <span>Run AI Fraud Analysis</span>
-                                </Button>
-                            </form>
-                        </CardContent>
-                    </Card>
+                    <AddFraudModal />
 
                     {/* Active Fraud Cases */}
                     <Card>
