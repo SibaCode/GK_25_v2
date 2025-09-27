@@ -2,72 +2,65 @@ import React, { useState } from "react";
 import Sidebar from "../components/Sidebar";
 import Header from "../components/Header";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
-import { Badge } from "../components/ui/badge";
 import { Input } from "../components/ui/input";
-import { Search, AlertCircle } from "lucide-react";
-import { ReportFraudModal } from "../components/modals/ReportFraudModal";
-import { TimelineModal } from "../components/modals/TimelineModal";
-import { NotificationsModal } from "../components/modals/NotificationsModal";
+import { Badge } from "../components/ui/badge";
+import { Button } from "../components/ui/button";
+import { Modal } from "../components/ui/modal";
 
-// Mock Data
-const MOCK_SIMs = [
-    { id: "sim1", number: "0821234567", provider: "Vodacom", status: "Active" },
-    { id: "sim2", number: "0829876543", provider: "MTN", status: "Active" }
-];
+const CustomerDashboard = () => {
+    const [idNumber, setIdNumber] = useState("");
+    const [linkedSIMs, setLinkedSIMs] = useState([]);
+    const [selectedSIM, setSelectedSIM] = useState(null);
+    const [showFraudModal, setShowFraudModal] = useState(false);
+    const [fraudDescription, setFraudDescription] = useState("");
+    const [fraudCases, setFraudCases] = useState([]);
+    const [notification, setNotification] = useState("");
 
-const MOCK_FRAUD_CASES = [
-    {
-        id: "case1",
-        simId: "sim1",
-        itcNumber: "ITC-10001",
-        status: "Pending CAS",
-        timeline: [
-            { date: new Date(), action: "Fraud Report Submitted", actor: "Customer", notes: "" },
-            { date: new Date(), action: "ITC Issued & SIM Blocked", actor: "System", notes: "" }
-        ]
-    }
-];
+    // ?? Mock SIMs linked to ID
+    const mockSIMs = [
+        { simNumber: "0821234567", provider: "Vodacom", status: "Active", lastActive: "2025-09-25" },
+        { simNumber: "0839876543", provider: "MTN", status: "Active", lastActive: "2025-09-20" },
+    ];
 
-const MOCK_NOTIFICATIONS = [
-    { id: "notif1", message: "Your SIM 0821234567 has been blocked.", date: new Date() }
-];
-
-// Badge colors
-const getStatusColor = (status) => {
-    switch (status) {
-        case "Active": return "bg-success text-success-foreground";
-        case "Blocked": return "bg-destructive text-destructive-foreground";
-        case "Pending CAS": return "bg-warning text-warning-foreground";
-        default: return "bg-muted text-muted-foreground";
-    }
-};
-
-export function CustomerDashboard() {
-    const [sims] = useState(MOCK_SIMs);
-    const [fraudCases, setFraudCases] = useState(MOCK_FRAUD_CASES);
-    const [notifications] = useState(MOCK_NOTIFICATIONS);
-    const [searchTerm, setSearchTerm] = useState("");
-
-    // Handle adding a new fraud case
-    const handleReportFraud = (simId, description) => {
-        const caseId = `case-${Date.now()}`;
-        const newCase = {
-            id: caseId,
-            simId,
-            itcNumber: `ITC-${Date.now()}`,
-            status: "Pending CAS",
-            timeline: [
-                { date: new Date(), action: "Fraud Report Submitted", actor: "Customer", notes: description },
-                { date: new Date(), action: "ITC Issued & SIM Blocked", actor: "System", notes: "" }
-            ]
-        };
-        setFraudCases(prev => [...prev, newCase]);
+    const handleVerifyID = () => {
+        // Fetch linked SIMs (mock)
+        setLinkedSIMs(mockSIMs);
+        setNotification("");
     };
 
-    // Filter SIMs
-    const filteredSIMs = sims.filter(sim =>
-        sim.number.includes(searchTerm) || sim.provider.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const handleReportFraud = (sim) => {
+        setSelectedSIM(sim);
+        setShowFraudModal(true);
+    };
+
+    const submitFraudCase = () => {
+        const itcNumber = "ITC" + Math.floor(Math.random() * 1000000);
+        const newCase = {
+            id: fraudCases.length + 1,
+            simNumber: selectedSIM.simNumber,
+            provider: selectedSIM.provider,
+            itcNumber,
+            description: fraudDescription,
+            status: "Fraud Report Submitted",
+            timeline: [
+                { step: "Fraud Report Submitted", by: "Customer" },
+                { step: "ITC Issued & SIM Blocked", by: "System" },
+            ],
+        };
+
+        // Update fraud cases
+        setFraudCases([...fraudCases, newCase]);
+        // Update SIM status to Blocked
+        setLinkedSIMs((prev) =>
+            prev.map((s) =>
+                s.simNumber === selectedSIM.simNumber ? { ...s, status: "Blocked" } : s
+            )
+        );
+
+        setShowFraudModal(false);
+        setFraudDescription("");
+        setNotification(`Fraud report submitted. ITC: ${itcNumber}`);
+    };
 
     return (
         <div className="flex h-screen">
@@ -77,51 +70,139 @@ export function CustomerDashboard() {
                 <div className="p-6 space-y-6 overflow-auto">
 
                     {/* Page Header */}
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <h1 className="text-3xl font-bold flex items-center gap-3">
-                                <AlertCircle className="w-8 h-8 text-primary" />
-                                Customer Dashboard
-                            </h1>
-                            <p className="text-muted-foreground mt-2">
-                                View linked SIMs, report fraud, track cases and notifications
-                            </p>
+                    <div>
+                        <h1 className="text-3xl font-bold mb-1">?? Customer Dashboard</h1>
+                        <p className="text-muted-foreground">
+                            View your SIMs and report fraud cases.
+                        </p>
+                    </div>
+
+                    {/* Notifications */}
+                    {notification && (
+                        <div className="p-3 bg-green-100 text-green-800 rounded-lg">
+                            {notification}
                         </div>
-                        <NotificationsModal notifications={notifications} />
-                    </div>
+                    )}
 
-                    {/* Search SIMs */}
-                    <div className="relative max-w-sm">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                        <Input
-                            placeholder="Search SIMs..."
-                            value={searchTerm}
-                            onChange={e => setSearchTerm(e.target.value)}
-                            className="pl-10"
-                        />
-                    </div>
+                    {/* Step 1: Enter ID */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Enter South African ID Number</CardTitle>
+                        </CardHeader>
+                        <CardContent className="flex gap-3">
+                            <Input
+                                placeholder="Enter your ID number"
+                                value={idNumber}
+                                onChange={(e) => setIdNumber(e.target.value)}
+                            />
+                            <Button onClick={handleVerifyID}>Verify / Search</Button>
+                        </CardContent>
+                    </Card>
 
-                    {/* SIM Cards */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                        {filteredSIMs.map(sim => (
-                            <Card key={sim.id}>
-                                <CardHeader>
-                                    <CardTitle>{sim.number}</CardTitle>
-                                    <Badge className={getStatusColor(sim.status)}>{sim.status}</Badge>
-                                </CardHeader>
-                                <CardContent>
-                                    <p>Provider: {sim.provider}</p>
-                                    <div className="flex gap-2 mt-4">
-                                        <ReportFraudModal simId={sim.id} onReportFraud={handleReportFraud} />
-                                        <TimelineModal fraudCases={fraudCases.filter(c => c.simId === sim.id)} />
+                    {/* Step 2: View Linked SIMs */}
+                    {linkedSIMs.length > 0 && (
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Linked SIM Cards</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <table className="w-full border-collapse">
+                                    <thead>
+                                        <tr className="border-b">
+                                            <th className="p-2 text-left">SIM Number</th>
+                                            <th className="p-2 text-left">Provider</th>
+                                            <th className="p-2 text-left">Status</th>
+                                            <th className="p-2 text-left">Last Active</th>
+                                            <th className="p-2 text-left">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {linkedSIMs.map((sim, idx) => (
+                                            <tr key={idx} className="border-b hover:bg-muted/50">
+                                                <td className="p-2">{sim.simNumber}</td>
+                                                <td className="p-2">{sim.provider}</td>
+                                                <td className="p-2">
+                                                    <Badge>{sim.status}</Badge>
+                                                </td>
+                                                <td className="p-2">{sim.lastActive}</td>
+                                                <td className="p-2">
+                                                    <Button
+                                                        onClick={() => handleReportFraud(sim)}
+                                                        variant="destructive"
+                                                    >
+                                                        Report Fraud
+                                                    </Button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </CardContent>
+                        </Card>
+                    )}
+
+                    {/* Step 3: Fraud Cases */}
+                    {fraudCases.length > 0 && (
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Your Fraud Cases</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                {fraudCases.map((fraudCase) => (
+                                    <div
+                                        key={fraudCase.id}
+                                        className="border p-4 rounded-lg mb-3 bg-muted/10"
+                                    >
+                                        <p>
+                                            <strong>SIM:</strong> {fraudCase.simNumber} ({fraudCase.provider})
+                                        </p>
+                                        <p>
+                                            <strong>ITC Number:</strong> {fraudCase.itcNumber}
+                                        </p>
+                                        <p>
+                                            <strong>Status:</strong> {fraudCase.status}
+                                        </p>
+                                        <div className="mt-2">
+                                            <p className="font-semibold">?? Timeline:</p>
+                                            <ul className="list-disc ml-6">
+                                                {fraudCase.timeline.map((t, i) => (
+                                                    <li key={i}>{t.step} – <em>{t.by}</em></li>
+                                                ))}
+                                            </ul>
+                                        </div>
                                     </div>
-                                </CardContent>
-                            </Card>
-                        ))}
-                    </div>
+                                ))}
+                            </CardContent>
+                        </Card>
+                    )}
+
+                    {/* Step 4: Report Fraud Modal */}
+                    {showFraudModal && (
+                        <Modal onClose={() => setShowFraudModal(false)}>
+                            <h2 className="text-xl font-bold mb-3">?? Report Fraud</h2>
+                            <p>
+                                <strong>SIM:</strong> {selectedSIM.simNumber} ({selectedSIM.provider})
+                            </p>
+                            <textarea
+                                className="w-full border p-2 mt-3 rounded-md"
+                                rows="4"
+                                placeholder="Describe the fraud..."
+                                value={fraudDescription}
+                                onChange={(e) => setFraudDescription(e.target.value)}
+                            />
+                            <div className="flex justify-end mt-4 gap-2">
+                                <Button variant="secondary" onClick={() => setShowFraudModal(false)}>
+                                    Cancel
+                                </Button>
+                                <Button onClick={submitFraudCase}>Submit</Button>
+                            </div>
+                        </Modal>
+                    )}
 
                 </div>
             </div>
         </div>
     );
-}
+};
+
+export default CustomerDashboard;
