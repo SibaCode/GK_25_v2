@@ -9,6 +9,7 @@ import PromotionsManagement from "./pages/PromotionsManagement";
 import SurveysManagement from "./pages/SurveysManagement";
 import LearningHubManagement from "./pages/LearningHubManagement";
 import SurveyPage from "./pages/SurveyPage";
+import { CustomerDashboard } from './pages/CustomerDashboard';
 
 function App() {
   return (
@@ -24,6 +25,7 @@ function App() {
         <Route path="/promotions" element={<PromotionsManagement />} />
         <Route path="/surveys" element={<SurveysManagement />} />
         <Route path="/survey/:id" element={<SurveyPage />} />
+              <Route path="/test" element={<CustomerDashboard />} />
 
 
       </Routes>
