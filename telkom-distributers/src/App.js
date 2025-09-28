@@ -10,7 +10,7 @@ import SurveysManagement from "./pages/SurveysManagement";
 import LearningHubManagement from "./pages/LearningHubManagement";
 import SurveyPage from "./pages/SurveyPage";
 import SimProtectionFlow from "./pages/SimProtectionFlow";
-//import SimProtectionDashboard from "./pages/";
+import SimProtectionDashboard from "./pages/dashboard/SimProtectionDashboard";
 
 function App() {
   return (
@@ -27,7 +27,7 @@ function App() {
         <Route path="/surveys" element={<SurveysManagement />} />
         <Route path="/survey/:id" element={<SurveyPage />} />
          <Route path="/" element={<SimProtectionFlow />} />
-              {/*<Route path="/test2" element={<SimProtectionDashboard />} />*/}
+              <Route path="/test2" element={<SimProtectionDashboard />} />
 
 
       </Routes>
