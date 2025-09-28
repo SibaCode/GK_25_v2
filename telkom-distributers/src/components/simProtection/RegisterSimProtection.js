@@ -5,7 +5,7 @@ import toast, { Toaster } from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import { db } from "../../firebase";
 import { getAuth } from "firebase/auth";
-import { doc, setDoc, arrayUnion } from "firebase/firestore";
+import { doc, updateDoc, arrayUnion } from "firebase/firestore";
 
 export default function RegisterSimProtection() {
     const navigate = useNavigate();
@@ -61,18 +61,34 @@ export default function RegisterSimProtection() {
 
         try {
             const userRef = doc(db, "users", user.uid);
+
+            // New SIM object
             const newSim = {
                 simNumber: linkedSims.find(s => s.id === form.simId)?.number || form.simId,
-                carrier: form.carrier,
+                carrier: form.carrier || linkedSims.find(s => s.id === form.simId)?.carrier,
                 freezeBanks: form.freezeBanks,
                 notifyInsurers: form.notifyInsurers,
                 registeredAt: new Date(),
             };
 
-            await setDoc(userRef, { linkedSims: arrayUnion(newSim) }, { merge: true });
+            // Demo alert for the new SIM
+            const newAlert = {
+                simNumber: newSim.simNumber,
+                message: `SIM ${newSim.simNumber} registered successfully.`,
+                severity: "high",
+                createdAt: new Date(),
+                resolved: false,
+            };
 
-            toast.success("SIM registered successfully!");
-            // reset form
+            // Update Firestore: add SIM and alert
+            await updateDoc(userRef, {
+                linkedSims: arrayUnion(newSim),
+                alerts: arrayUnion(newAlert),
+            });
+
+            toast.success("SIM registered and alert created!");
+
+            // Reset form & go to dashboard alerts
             setForm({
                 fullName: "",
                 email: "",
@@ -85,9 +101,7 @@ export default function RegisterSimProtection() {
                 compliance: false,
             });
             setStep(1);
-
-            // Redirect
-            navigate("/dashboard/home");
+            navigate("/dashboard/alerts");
         } catch (err) {
             console.error("Firestore error:", err);
             toast.error(`Error registering SIM: ${err.message}`);
@@ -100,7 +114,7 @@ export default function RegisterSimProtection() {
             <div className="w-full max-w-3xl bg-white rounded-xl shadow-lg p-6 space-y-4">
                 <h2 className="text-2xl font-bold text-gray-800 text-center">SIM Protection Registration</h2>
 
-                {/* Step 1 */}
+                {/* Step 1: Personal Info */}
                 {step === 1 && (
                     <div className="space-y-4">
                         <h3 className="font-semibold text-gray-700">Step 1: Personal Information</h3>
@@ -130,7 +144,7 @@ export default function RegisterSimProtection() {
                     </div>
                 )}
 
-                {/* Step 2 */}
+                {/* Step 2: SIM & Rules */}
                 {step === 2 && (
                     <div className="space-y-4">
                         <h3 className="font-semibold text-gray-700">Step 2: Select SIM & Rules</h3>
@@ -186,12 +200,12 @@ export default function RegisterSimProtection() {
 
                         <div className="flex justify-between">
                             <Button className="bg-gray-300 text-black" onClick={() => setStep(1)}>Back</Button>
-                            <Button className="bg-green-500 text-white" onClick={() => setStep(3)}>Next</Button>
+                            <Button className="bg-blue-500 text-white" onClick={() => setStep(3)}>Next</Button>
                         </div>
                     </div>
                 )}
 
-                {/* Step 3 */}
+                {/* Step 3: Summary & Consent */}
                 {step === 3 && (
                     <div className="space-y-4">
                         <h3 className="font-semibold text-gray-700">Step 3: Summary & Consent</h3>
