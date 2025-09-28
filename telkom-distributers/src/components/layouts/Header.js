@@ -1,4 +1,5 @@
 import React from "react";
+import LogoutButton from "../auth/LogoutButton";
 
 const Header = () => {
     return (
@@ -7,11 +8,13 @@ const Header = () => {
             <div>
                 <span className="text-muted-foreground mr-4">{new Date().toLocaleDateString()}</span>
                 <button className="bg-accent text-white px-4 py-2 rounded hover:brightness-90 transition">
-                    Logout
+                      <LogoutButton />
                 </button>
             </div>
+
         </div>
     );
 };
 
 export default Header;
+// src/components/dashboard/DashboardHeader.js

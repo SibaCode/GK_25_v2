@@ -1,4 +1,3 @@
-// src/components/auth/Login.js
 import React, { useState } from "react";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../../firebase";
@@ -8,7 +7,11 @@ import { Button } from "../ui/button";
 
 export default function Login() {
     const navigate = useNavigate();
-    const [form, setForm] = useState({ email: "", password: "" });
+    // Pre-fill email and password
+    const [form, setForm] = useState({
+        email: "mvubusiba@gmail.com",
+        password: "mvubusiba@gmail.com" // If this is just a placeholder, replace with the actual password
+    });
 
     const handleChange = (e) => {
         setForm({ ...form, [e.target.name]: e.target.value });
