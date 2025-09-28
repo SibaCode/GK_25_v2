@@ -21,7 +21,7 @@ const Sidebar = () => {
 
                 <Link
                     className="flex items-center gap-2 p-2 hover:bg-primary/10 rounded"
-                    to="/dashboard/register"
+                    to="/dashboard/registerSim"
                 >
                     <CreditCard className="w-5 h-5 text-warning" />
                     Register SIM

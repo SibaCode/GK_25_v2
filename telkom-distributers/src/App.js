@@ -60,7 +60,7 @@ function App() {
                         <DashboardLayout>
                             <Routes>
                                 <Route path="home" element={<DashboardHome />} />
-                                <Route path="registerSims" element={<RegisterSimProtection />} />
+                                <Route path="registerSim" element={<RegisterSimProtection />} />
                                 <Route path="alerts" element={<AlertsPage />} />
                                 <Route path="linked" element={<LinkedSims />} />
                                 <Route path="profile" element={<ProfilePage />} />

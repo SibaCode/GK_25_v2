@@ -3,7 +3,7 @@ import React from "react";
 export default function DashboardHome() {
   return (
     <div className="p-6 space-y-6">
-      <h1 className="text-3xl font-bold">Welcome to SIM Protection</h1>
+      <h1 className="text-3xl font-bold">Welcome teeeo SIM Protection</h1>
       <p className="text-gray-700">
         This service alerts you of any unusual activity on your SIM cards. 
         You can register new SIMs, track alerts, and manage your linked accounts.
