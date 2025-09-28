@@ -1,104 +1,88 @@
-// src/components/dashboard/AlertsPage.js
+// src/components/dashboard/DashboardAlerts.js
 import React, { useEffect, useState } from "react";
-import { db } from "../../firebase";
 import { getAuth } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, onSnapshot } from "firebase/firestore";
+import { db } from "../../firebase";
 
 export default function AlertsPage() {
     const [alerts, setAlerts] = useState([]);
-    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const fetchAlerts = async () => {
-            try {
-                const auth = getAuth();
-                const user = auth.currentUser;
-                if (!user) {
-                    setLoading(false);
-                    return;
-                }
+        const auth = getAuth();
+        const user = auth.currentUser;
+        if (!user) return;
 
-                const userRef = doc(db, "users", user.uid);
-                const snap = await getDoc(userRef);
-
-                if (snap.exists()) {
-                    const data = snap.data();
-                    setAlerts(data.alerts || []);
-                }
-            } catch (err) {
-                console.error("Error fetching alerts:", err);
-            } finally {
-                setLoading(false);
+        const userRef = doc(db, "users", user.uid);
+        const unsub = onSnapshot(userRef, (snap) => {
+            if (snap.exists()) {
+                setAlerts(snap.data().alerts || []);
             }
-        };
+        });
 
-        fetchAlerts();
+        return () => unsub();
     }, []);
 
-    if (loading) return <p className="p-6 text-gray-600">Loading alerts...</p>;
-
     return (
-        <div className="min-h-screen bg-gray-100 p-6">
-            <div className="max-w-5xl mx-auto bg-white rounded-xl shadow-lg p-6">
-                <h2 className="text-2xl font-bold text-gray-800 mb-4">My Alerts</h2>
-
-                {alerts.length === 0 ? (
-                    <p className="text-gray-600">No alerts found.</p>
-                ) : (
-                    <div className="space-y-4">
-                        {alerts.map((alert, idx) => (
-                            <div
-                                key={idx}
-                                className="border border-gray-200 rounded-lg p-4 bg-gray-50 shadow-sm"
-                            >
-                                <p className="text-sm text-gray-500 mb-1">
-                                    Ref Number:{" "}
-                                    <span className="font-mono font-semibold text-blue-600">
-                                        {alert.refNumber}
-                                    </span>
-                                </p>
-                                <p className="text-lg font-semibold text-gray-800">
-                                    SIM: {alert.simNumber}
-                                </p>
-                                <p className="text-gray-700 mt-1">{alert.message}</p>
-
-                                <div className="mt-2">
-                                    <p className="font-semibold text-gray-700">Applied Rules:</p>
-                                    <ul className="list-disc list-inside text-gray-600">
-                                        <li>
-                                            Banks Frozen:{" "}
-                                            {alert.rules?.freezeBanks?.length
-                                                ? alert.rules.freezeBanks.join(", ")
-                                                : "None"}
-                                        </li>
-                                        <li>
-                                            Insurers Notified:{" "}
-                                            {alert.rules?.notifyInsurers?.length
-                                                ? alert.rules.notifyInsurers.join(", ")
-                                                : "None"}
-                                        </li>
-                                    </ul>
-                                </div>
-
-                                <p className="text-xs text-gray-500 mt-2">
-                                    Created:{" "}
-                                    {alert.createdAt?.seconds
-                                        ? new Date(alert.createdAt.seconds * 1000).toLocaleString()
-                                        : "N/A"}
-                                </p>
-                                <p
-                                    className={`inline-block mt-2 px-2 py-1 text-xs rounded ${alert.resolved
-                                            ? "bg-green-100 text-green-700"
-                                            : "bg-red-100 text-red-700"
-                                        }`}
-                                >
-                                    {alert.resolved ? "Resolved" : "Active"}
-                                </p>
-                            </div>
-                        ))}
-                    </div>
-                )}
+        <div className="space-y-6">
+            <div className="text-gray-700">
+                <h2 className="text-3xl font-bold mb-2">Alerts</h2>
+                <p className="text-gray-500">
+                    Here are all alerts generated for your registered SIMs.
+                </p>
             </div>
+
+            {alerts.length === 0 ? (
+                <p className="text-gray-500">No alerts available.</p>
+            ) : (
+                <div className="overflow-x-auto">
+                    <table className="min-w-full bg-white shadow-md rounded-xl overflow-hidden">
+                        <thead className="bg-gray-100 text-left text-gray-700">
+                            <tr>
+                                <th className="px-4 py-3">Ref</th>
+                                <th className="px-4 py-3">SIM Number</th>
+                                <th className="px-4 py-3">Carrier</th>
+                                <th className="px-4 py-3">Rules Applied</th>
+                                <th className="px-4 py-3">Status</th>
+                                <th className="px-4 py-3">Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {alerts.map((alert, idx) => (
+                                <tr key={idx} className="border-t hover:bg-gray-50">
+                                    <td className="px-4 py-3 font-mono text-sm">{alert.ref}</td>
+                                    <td className="px-4 py-3">{alert.simNumber}</td>
+                                    <td className="px-4 py-3">{alert.carrier}</td>
+                                    <td className="px-4 py-3 text-sm text-gray-600">
+                                        <div>
+                                            <strong>Banks:</strong>{" "}
+                                            {alert.freezeBanks?.length > 0 ? alert.freezeBanks.join(", ") : "None"}
+                                        </div>
+                                        <div>
+                                            <strong>Insurers:</strong>{" "}
+                                            {alert.notifyInsurers?.length > 0 ? alert.notifyInsurers.join(", ") : "None"}
+                                        </div>
+                                    </td>
+                                    <td className="px-4 py-3">
+                                        <span
+                                            className={`px-2 py-1 rounded text-xs font-semibold ${alert.status === "new"
+                                                    ? "bg-red-100 text-red-600"
+                                                    : "bg-gray-100 text-gray-600"
+                                                }`}
+                                        >
+                                            {alert.status}
+                                        </span>
+                                    </td>
+                                    <td className="px-4 py-3 text-sm text-gray-500">
+                                        {alert.createdAt?.seconds
+                                            ? new Date(alert.createdAt.seconds * 1000).toLocaleString()
+                                            : "—"}
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            )}
         </div>
     );
 }

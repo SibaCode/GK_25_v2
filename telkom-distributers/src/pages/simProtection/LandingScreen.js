@@ -1,12 +1,19 @@
+// src/components/LandingScreen.js
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import { ShieldCheck, AlertTriangle, Banknote } from "lucide-react";
 
-export default function LandingScreen({ onStart }) {
+export default function LandingScreen() {
+    const navigate = useNavigate();
+
+    const handleLogin = () => {
+        navigate("/login"); // Redirect to your login route
+    };
+
     return (
         <div className="max-w-2xl text-center space-y-8 p-6">
             <h1 className="text-4xl font-bold">Telkom SIM Protection</h1>
             <p className="text-lg text-blue-100">
-                Protect yourself against SIM swap fraud and unauthorized activity.
                 We instantly notify your banks, insurers, and apps when unusual activity is detected.
             </p>
 
@@ -26,10 +33,10 @@ export default function LandingScreen({ onStart }) {
             </div>
 
             <button
-                onClick={onStart}
+                onClick={handleLogin}
                 className="px-6 py-3 bg-white text-blue-600 font-bold rounded-xl shadow hover:bg-blue-100 transition"
             >
-                Start Registration
+                Login
             </button>
         </div>
     );

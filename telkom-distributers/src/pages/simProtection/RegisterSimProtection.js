@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { db } from "../../firebase";
-import { collection, query, where, getDocs, addDoc } from "firebase/firestore";
+import { collection, getDocs, query, where, addDoc } from "firebase/firestore";
 import { Button } from "../ui/button";
 import toast, { Toaster } from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
@@ -16,7 +16,7 @@ export default function RegisterSimProtection({ user }) {
     const [linkedSims, setLinkedSims] = useState([]);
     const [loadingSims, setLoadingSims] = useState(true);
 
-    // Fetch linked SIMs for this user
+    // Fetch linked SIMs
     useEffect(() => {
         const fetchSims = async () => {
             if (!user?.uid) return;
@@ -26,7 +26,6 @@ export default function RegisterSimProtection({ user }) {
                 const q = query(simsRef, where("userId", "==", user.uid));
                 const snapshot = await getDocs(q);
                 const sims = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-                // If no SIMs, use mock for presentation
                 if (sims.length === 0) {
                     setLinkedSims([
                         { id: "sim1", number: "0812345678", carrier: "Telkom" },
@@ -69,12 +68,25 @@ export default function RegisterSimProtection({ user }) {
         }
 
         try {
-            await addDoc(collection(db, "simProtections"), { ...form, userId: user.uid, createdAt: new Date() });
+            // Remove new Date() or serverTimestamp
+            const alertData = {
+                userId: user.uid,
+                simId: form.simId,
+                simNumber: linkedSims.find((s) => s.id === form.simId)?.number || "",
+                carrier: linkedSims.find((s) => s.id === form.simId)?.carrier || "",
+                freezeBanks: form.freezeBanks,
+                notifyInsurers: form.notifyInsurers,
+                ref: Math.random().toString(36).substring(2, 10), // simple random ref
+            };
+
+            // Store alert in "simProtections"
+            await addDoc(collection(db, "simProtections"), alertData);
+
             toast.success("SIM Protection registered!");
-            navigate("/dashboard/home"); // go back to dashboard
+            navigate("/dashboard/home");
         } catch (err) {
             console.error(err);
-            toast.error("Failed to register SIM protection");
+            toast.error("Error registering SIM."); // Now should work
         }
     };
 
