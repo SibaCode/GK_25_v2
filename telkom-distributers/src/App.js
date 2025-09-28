@@ -25,6 +25,7 @@ import LinkedSims from "./components/dashboard/LinkedSims";
 import ProfilePage from "./components/dashboard/ProfilePage";
 import RegisterSimProtection from "./components/simProtection/RegisterSimProtection";
 import DashboardLayout from "./components/layouts/DashboardLayout";
+import SafetyCompliance from "./components/dashboard/SafetyCompliance";
 
 // Auth Pages
 import Login from "./components/auth/Login";
@@ -63,7 +64,7 @@ function App() {
                                 <Route path="registerSim" element={<RegisterSimProtection />} />
                                 <Route path="alerts" element={<AlertsPage />} />
                                 <Route path="linked" element={<LinkedSims />} />
-                                <Route path="profile" element={<ProfilePage />} />
+                                <Route path="safety" element={<SafetyCompliance />} />
                             </Routes>
                         </DashboardLayout>
                     ) : (

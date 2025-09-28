@@ -34,14 +34,13 @@ const Sidebar = () => {
                     <ShieldCheck className="w-5 h-5 text-danger" />
                     Alerts
                 </Link>
-
-                {/*<Link*/}
-                {/*    className="flex items-center gap-2 p-2 hover:bg-primary/10 rounded"*/}
-                {/*    to="/dashboard/linked"*/}
-                {/*>*/}
-                {/*    <Users className="w-5 h-5 text-primary" />*/}
-                {/*    Linked SIMs*/}
-                {/*</Link>*/}
+                <Link
+                    className="flex items-center gap-2 p-2 hover:bg-primary/10 rounded"
+                    to="/dashboard/safety"
+                >
+                    <Users className="w-5 h-5 text-primary" />
+                    Safety & Compliance
+                </Link>
 
                 {/*<Link*/}
                 {/*    className="flex items-center gap-2 p-2 hover:bg-primary/10 rounded"*/}

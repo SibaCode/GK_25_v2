@@ -4,21 +4,22 @@ import { Button } from "../ui/button";
 import toast, { Toaster } from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import { getAuth } from "firebase/auth";
-import { doc, updateDoc, arrayUnion, serverTimestamp ,setDoc} from "firebase/firestore";
+import { doc, setDoc, arrayUnion } from "firebase/firestore";
 import { db } from "../../firebase";
 
 export default function RegisterSimProtection() {
     const navigate = useNavigate();
     const [form, setForm] = useState({
-        fullName: "",
-        dob: "",
-        email: "",
-        phone: "",
-        idNumber: "",
-        simId: "",
-        freezeBanks: [],
-        notifyInsurers: [],
-        compliance: false,
+        fullName: "Mvubu Siba",
+        email: "mvubusiba@gmail.com",
+        phone: "0812345678",
+        idNumber: "9001011234567",
+        altEmail: "alt@example.com",
+        altPhone: "0823456789",
+        simId: "sim1", // pre-selected SIM
+        freezeBanks: ["Capitec", "FNB"], // pre-selected banks
+        notifyInsurers: ["Naked Insurance X"], // pre-selected insurer
+        compliance: true, // pre-checked consent
     });
     const [step, setStep] = useState(1);
 
@@ -48,6 +49,7 @@ export default function RegisterSimProtection() {
     };
 
     const generateRef = () => "REF-" + Math.floor(Math.random() * 1000000);
+
     const handleSubmit = async () => {
         if (!form.compliance) {
             toast.error("Please confirm your consent before submitting.");
@@ -65,32 +67,37 @@ export default function RegisterSimProtection() {
             const userRef = doc(db, "users", user.uid);
             const simData = linkedSims.find((s) => s.id === form.simId);
 
-            // New SIM object
             const newSim = {
                 simId: form.simId,
                 simNumber: simData?.number || "",
                 carrier: simData?.carrier || "",
                 freezeBanks: form.freezeBanks,
                 notifyInsurers: form.notifyInsurers,
+                altEmail: form.altEmail,
+                altPhone: form.altPhone,
                 registeredAt: new Date(),
             };
 
-            // New alert object
             const newAlert = {
                 ref: generateRef(),
                 simNumber: simData?.number || "",
                 carrier: simData?.carrier || "",
                 freezeBanks: form.freezeBanks,
                 notifyInsurers: form.notifyInsurers,
+                altEmail: form.altEmail,
+                altPhone: form.altPhone,
                 status: "new",
                 createdAt: new Date(),
             };
 
-            // Save both SIM and Alert, creating the document if it doesn't exist
-            await setDoc(userRef, {
-                linkedSims: arrayUnion(newSim),
-                alerts: arrayUnion(newAlert),
-            }, { merge: true }); // ? merge keeps existing data
+            await setDoc(
+                userRef,
+                {
+                    linkedSims: arrayUnion(newSim),
+                    alerts: arrayUnion(newAlert),
+                },
+                { merge: true }
+            );
 
             toast.success("SIM registered & alert created!");
             navigate("/dashboard/alerts");
@@ -108,7 +115,7 @@ export default function RegisterSimProtection() {
                     SIM Protection Registration
                 </h2>
 
-                {/* Step 1: Personal Info */}
+                {/* Step 1 */}
                 <div className={`rounded-md border ${step >= 1 ? "border-blue-400" : "border-gray-300"} p-4`}>
                     <div className="flex justify-between items-center cursor-pointer" onClick={() => setStep(1)}>
                         <h3 className="font-semibold text-gray-700">Step 1: Personal Information</h3>
@@ -117,11 +124,11 @@ export default function RegisterSimProtection() {
                     {step === 1 && (
                         <div className="mt-4">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {[{ label: "Full Name", name: "fullName", type: "text" },
-                                { label: "Date of Birth", name: "dob", type: "date" },
-                                { label: "Email", name: "email", type: "email" },
-                                { label: "Phone Number", name: "phone", type: "tel" },
-                                { label: "ID Number", name: "idNumber", type: "text", colSpan: 2 }
+                                {[
+                                    { label: "Full Name", name: "fullName", type: "text" },
+                                    { label: "Email", name: "email", type: "email" },
+                                    { label: "Phone Number", name: "phone", type: "tel" },
+                                    { label: "ID Number", name: "idNumber", type: "text", colSpan: 2 },
                                 ].map((field) => (
                                     <div key={field.name} className={field.colSpan ? "md:col-span-2" : ""}>
                                         <label className="block text-gray-700 font-medium mb-1">{field.label}</label>
@@ -143,7 +150,7 @@ export default function RegisterSimProtection() {
                     )}
                 </div>
 
-                {/* Step 2: SIM & Rules */}
+                {/* Step 2 */}
                 <div className={`rounded-md border ${step >= 2 ? "border-blue-400" : "border-gray-300"} p-4`}>
                     <div className="flex justify-between items-center cursor-pointer" onClick={() => setStep(2)}>
                         <h3 className="font-semibold text-gray-700">Step 2: Select SIM & Add Rules</h3>
@@ -158,15 +165,35 @@ export default function RegisterSimProtection() {
                                     value={form.simId}
                                     onChange={handleChange}
                                     className="w-full border border-gray-300 rounded-md p-3"
-                                    required
                                 >
-                                    <option value="">Select SIM</option>
                                     {linkedSims.map((sim) => (
                                         <option key={sim.id} value={sim.id}>
                                             {sim.number} ({sim.carrier})
                                         </option>
                                     ))}
                                 </select>
+                            </div>
+
+                            <div>
+                                <label className="block text-gray-700 font-medium mb-1">Alternative Email</label>
+                                <input
+                                    type="email"
+                                    name="altEmail"
+                                    value={form.altEmail}
+                                    onChange={handleChange}
+                                    className="w-full border border-gray-300 rounded-md p-3 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-gray-700 font-medium mb-1">Alternative Phone Number</label>
+                                <input
+                                    type="tel"
+                                    name="altPhone"
+                                    value={form.altPhone}
+                                    onChange={handleChange}
+                                    className="w-full border border-gray-300 rounded-md p-3 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                />
                             </div>
 
                             <div>
@@ -209,7 +236,7 @@ export default function RegisterSimProtection() {
                     )}
                 </div>
 
-                {/* Step 3: Summary & Consent */}
+                {/* Step 3 */}
                 <div className={`rounded-md border ${step >= 3 ? "border-blue-400" : "border-gray-300"} p-4`}>
                     <div className="flex justify-between items-center cursor-pointer" onClick={() => setStep(3)}>
                         <h3 className="font-semibold text-gray-700">Step 3: Summary & Consent</h3>
@@ -217,10 +244,12 @@ export default function RegisterSimProtection() {
                     {step === 3 && (
                         <div className="mt-4 space-y-4">
                             <div className="bg-gray-50 p-4 rounded-md border border-gray-200">
-                                <p><strong>SIM:</strong> {linkedSims.find(s => s.id === form.simId)?.number || "None"}</p>
-                                <p><strong>Carrier:</strong> {linkedSims.find(s => s.id === form.simId)?.carrier || "None"}</p>
-                                <p><strong>Banks to Freeze:</strong> {form.freezeBanks.join(", ") || "None"}</p>
-                                <p><strong>Insurers to Notify:</strong> {form.notifyInsurers.join(", ") || "None"}</p>
+                                <p><strong>SIM:</strong> {linkedSims.find(s => s.id === form.simId)?.number}</p>
+                                <p><strong>Carrier:</strong> {linkedSims.find(s => s.id === form.simId)?.carrier}</p>
+                                <p><strong>Alternative Email:</strong> {form.altEmail}</p>
+                                <p><strong>Alternative Phone:</strong> {form.altPhone}</p>
+                                <p><strong>Banks to Freeze:</strong> {form.freezeBanks.join(", ")}</p>
+                                <p><strong>Insurers to Notify:</strong> {form.notifyInsurers.join(", ")}</p>
                                 <label className="inline-flex items-center mt-2">
                                     <input
                                         type="checkbox"
@@ -228,7 +257,6 @@ export default function RegisterSimProtection() {
                                         checked={form.compliance}
                                         onChange={handleChange}
                                         className="mr-2"
-                                        required
                                     />
                                     I confirm I understand the compliance and regulations
                                 </label>
