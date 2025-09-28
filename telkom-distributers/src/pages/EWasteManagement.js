@@ -1,231 +1,115 @@
-import React, { useEffect, useState } from "react";
-import Sidebar from "../components/Sidebar";
-import Header from "../components/Header";
+//Sample SMS to customer
 
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
-import { Badge } from "../components/ui/badge";
-import { Input } from "../components/ui/input"; 
-import { Recycle, Search, Award } from "lucide-react";
+//“SERVICE ALERT: Unusual activity detected on + 27821234567. We’ve requested your bank(s) to pause high - risk actions.If this is you, reply YES within 2 mins to cancel the pause, else call + 27 - XX - XXXX - XXXX.”
 
-import { AddEWasteModal } from "../components/modals/AddEWasteModal";
-import { EWasteDetailsModal } from "../components/modals/EWasteDetailsModal";
+//(Keep messages short; prefer push / app confirmation where possible.)
 
-import { db } from "../firebase";
-import { collection, onSnapshot, query, orderBy, doc, updateDoc } from "firebase/firestore";
+//Insurance / coverage model suggestions
 
-// Status colors
-const getStatusColor = (status) => {
-  switch (status) {
-    case "Collected": return "bg-warning text-warning-foreground";
-    case "Processing": return "bg-secondary text-secondary-foreground";
-    case "Recycled": return "bg-success text-success-foreground";
-    default: return "bg-muted text-muted-foreground";
-  }
-};
+//Premium model: low monthly fee or small annual premium; underwriting uses phone age, number usage profile, geographic risk.
 
-const EWasteManagement = () => {
-  const [logs, setLogs] = useState([]);
-  const [searchTerm, setSearchTerm] = useState("");
+//    Coverage: reimburse verified financial loss due to approved SIM swap fraud up to policy limits; optionally provide credit monitoring / identity restoration services.
 
-  // Firestore listener
-  useEffect(() => {
-    const q = query(collection(db, "eWasteEntries"), orderBy("createdAt", "desc"));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const logsFromDB = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      setLogs(logsFromDB);
-    });
-    return () => unsubscribe();
-  }, []);
+//        Exclusions: customer negligence(sharing PIN / OTP), failure to enable recommended protections, or delays caused by third - party institutions beyond SLA.
 
-  const handleAddEntry = async (entryData) => {
-    try {
-      const { addEWasteLog } = await import("../../services/ewasteService");
-      await addEWasteLog({
-        ...entryData,
-        createdAt: new Date(),
-        items: Array.isArray(entryData.items) ? entryData.items : [entryData.items || "Unknown"],
-        weight: entryData.weight || 0,
-        rewardPoints: entryData.rewardPoints || 0,
-        distributor: entryData.distributor || "Unknown",
-        status: entryData.status || "Collected"
-      });
-      // onSnapshot will automatically update the UI
-    } catch (error) {
-      console.error("Failed to add e-waste log:", error);
-    }
-  };
+//Claims flow: claim intake ? require telco event logs + bank transaction logs ? forensic review ? payout within X business days if claim valid.
 
-  const handleStatusChange = async (logId, newStatus) => {
-    try {
-      const logRef = doc(db, "eWasteEntries", logId);
-      await updateDoc(logRef, { status: newStatus });
-    } catch (error) {
-      console.error("Failed to update status:", error);
-    }
-  };
+//    Legal & compliance considerations
 
-  // Safe reductions
-  const totalWeight = logs.reduce((sum, log) => sum + (log.weight || 0), 0);
-  const totalRewards = logs.reduce((sum, log) => sum + (log.rewardPoints || 0), 0);
+//Must obtain explicit, informed consent from the subscriber to share telco events with third parties(banks / insurers).Keep consent records auditable.
 
-  const filteredLogs = logs.filter(log => 
-    (log.customer?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    log.distributor?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (Array.isArray(log.items) ? log.items.some(item => item.toLowerCase().includes(searchTerm.toLowerCase())) : false))
-  );
+//Comply with local data protection laws(e.g., POPIA in South Africa) — minimise stored PII, encrypt data at rest & in transit, implement access controls.
 
-  return (
-    <div className="flex h-screen">
-      <Sidebar />
-      <div className="flex-1 flex flex-col">
-        <Header />
+//    Agreements / MOUs with MNOs and banks to accept signed machine - to - machine notifications and to act on them.This may require regulatory engagement.
 
-        <div className="p-6 space-y-6 overflow-auto">
-          {/* Page Header */}
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
-                <Recycle className="w-8 h-8 text-primary" />
-                E-Waste Tracking
-              </h1>
-              <p className="text-muted-foreground mt-2">
-                Manage electronic waste collection and reward distribution
-              </p>
-            </div>
-            <AddEWasteModal onAddEntry={handleAddEntry} />
-          </div>
+//Clarify liability: if platform notifies but the bank fails to act, liability may rest with the bank or be apportioned in contract.Define SLAs and mutual indemnities.
 
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Card className="shadow-card hover:shadow-card-hover transition-shadow">
-              <CardContent className="p-6 flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Total Collections</p>
-                  <p className="text-2xl font-bold text-foreground">{logs.length}</p>
-                </div>
-                <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
-                  <Recycle className="w-6 h-6 text-primary" />
-                </div>
-              </CardContent>
-            </Card>
+//Regulatory sandbox may help accelerate pilot with telcos and banks.
 
-            <Card className="shadow-card hover:shadow-card-hover transition-shadow">
-              <CardContent className="p-6 flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Total Weight (kg)</p>
-                  <p className="text-2xl font-bold text-primary">{totalWeight.toFixed(1)}</p>
-                </div>
-                <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
-                  <Recycle className="w-6 h-6 text-primary" />
-                </div>
-              </CardContent>
-            </Card>
+//    Business / partnership strategy
 
-            <Card className="shadow-card hover:shadow-card-hover transition-shadow">
-              <CardContent className="p-6 flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Rewards Distributed</p>
-                  <p className="text-2xl font-bold text-accent">{totalRewards}</p>
-                </div>
-                <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center">
-                  <Award className="w-6 h-6 text-accent" />
-                </div>
-              </CardContent>
-            </Card>
+//Pilot with one telco + 1–2 banks: prove the ingestion of SIM events, partner acknowledgement flows, and mitigation effectiveness.
 
-            <Card className="shadow-card hover:shadow-card-hover transition-shadow">
-              <CardContent className="p-6 flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Items Recycled</p>
-                  <p className="text-2xl font-bold text-success">
-                    {logs.filter(log => log.status === "Recycled").length}
-                  </p>
-                </div>
-                <div className="w-12 h-12 bg-success/10 rounded-lg flex items-center justify-center">
-                  <Recycle className="w-6 h-6 text-success" />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+//Insurance underwriter partnership: partner with an insurer to underwrite losses while you provide the tech & orchestration.Alternatively, self - insured with reinsurance.
 
-          {/* Search */}
-          <div className="flex gap-4 items-center">
-            <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-              <Input
-                placeholder="Search collections..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-          </div>
+//Telco integration: negotiate access to real - time SIM lifecycle events(IMSI change, port requests, subscriber notifications) — most critical piece.
 
-          {/* E-Waste Logs */}
-          <Card className="shadow-card">
-            <CardHeader>
-              <CardTitle>Collection Logs</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {filteredLogs.map(log => (
-                  <div key={log.id} className="p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-3">
-                        <h3 className="font-semibold text-foreground">{log.customer || "N/A"}</h3>
-                        <Badge className={getStatusColor(log.status || "Unknown")}>
-                          {log.status || "Unknown"}
-                        </Badge>
-                      </div>
-                      <span className="text-sm text-muted-foreground">
-                        {log.createdAt
-                          ? (log.createdAt.toDate
-                              ? log.createdAt.toDate().toLocaleString()
-                              : new Date(log.createdAt).toLocaleString())
-                          : "N/A"}
-                      </span>
-                    </div>
+//Bank integrations: start with API / webhook agreements to accept alerts and apply pre - agreed protective actions.
 
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-3">
-                      <div>
-                        <p className="text-sm text-muted-foreground">Items</p>
-                        <p className="font-medium text-foreground">
-                          {Array.isArray(log.items) ? log.items.join(", ") : log.items || "N/A"}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Weight</p>
-                        <p className="font-medium text-foreground">{log.weight || 0} kg</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Reward Points</p>
-                        <p className="font-medium text-accent">{log.rewardPoints || 0} pts</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Distributor</p>
-                        <p className="font-medium text-foreground">{log.distributor || "N/A"}</p>
-                      </div>
-                    </div>
+//Fraud detection signals(sources of truth)
 
-                    <div className="flex gap-2">
-                      <EWasteDetailsModal
-                        log={log}
-                        onStatusChange={handleStatusChange}
-                        trigger={<button className="px-3 py-1 border rounded-md text-sm">View Details</button>}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    </div>
-  );
-};
+//IMSI change / new IMSI for a MSISDN
 
-export default EWasteManagement;
+//SIM activation events on same MSISDN with different SIM IDs
+
+//Port - out request events(number portability)
+
+//Recent password reset / OTP attempt patterns across linked services
+
+//IMEI change + location mismatch
+
+//Multiple failed authentication attempts
+
+//Metrics & SLA to track
+
+//Time from telco event ? partner alert sent(target < 10s)
+
+//Partner acknowledgement time(target < 30s)
+
+//False positive rate(target < 5 %)
+
+//Successful prevented fraud attempts(tracked via near misses)
+
+//Claim approval time & payout accuracy
+
+//Sample SLAs for partners
+
+//Telco: deliver event webhooks within 5s of event; sign messages with agreed key.
+
+//    Bank: acknowledge alerts within 30s; apply temporary protective actions within 2 minutes for high - risk alerts(or confirm manual escalation).
+
+//        Platform: deliver signed alert and store non - repudiable audit within 10s; 99.9 % uptime.
+
+//            Challenges & mitigations
+
+//Telco cooperation: negotiation heavy.Solution: pilot with one MNO and prove ROI(reduction in fraud payouts) to attract others.
+
+//Bank action variability: different banks have different onboarding / automations — produce standard API spec and SDKs.
+
+//False positives annoying customers: provide easy override(one - tap confirmation) and adaptive scoring to reduce friction.
+
+//Legal liability: get strong contractual protections & clear consent.Consider regulator engagement early.
+
+//    Pricing & go - to - market ideas
+
+//Freemium: basic alerting for free; premium paid tiers include insurance coverage, faster response, and family plans.
+
+//    B2B2C: sell service bundled through telcos as value - add and offered to their customers; share revenue with telco and bank partners.
+
+//        Enterprise: sell to banks / insurers as a whitelabeled product for their customers.
+
+//Next steps(practical, actionable)
+
+//Draft a short one - page technical spec and partner API doc(use the sample above as a base).
+
+//Approach a friendly telco partner with a pilot ask: provide access to SIM lifecycle webhooks for a controlled set of MSISDNs.Offer a revenue share / pilot funding.
+
+//    Approach 1–2 banks for pilot integration and agree minimal actions(block SMS OTP for flagged accounts, freeze outgoing transfers).
+
+//Draft a consent & privacy policy for users; get legal review for your jurisdiction(e.g., POPIA).
+
+//Build an MVP: ingestion, rule engine, partner webhook, user onboarding + audit logs.Run pilot for 3 months measuring prevented / failed fraud and false positives.
+
+//    Iterate, then add insurance underwriting partner to cover losses and scale commercial rollout.
+
+//Example user - facing messaging & templates
+
+//Enrollment consent:
+//“I authorize[Service] to receive security events from my mobile operator and to share alerts about unusual SIM activity with the financial institutions I nominate.I understand actions taken are temporary protective measures.” (store signature + timestamp)
+
+//Bank alert(short):
+//“[Service] Alert: SIM_SWAP riskScore = 85 for +2782XXXXXXX.Recommend: block SMS OTP & suspend transfers > ZAR5000.AlertID: alert_987.Signature: …”
+
+//Final notes — why this can work
+
+//The weakest link in many modern authentication flows is the mobile number; telcos are the source of truth for SIM lifecycle events.An orchestration layer that has consent + direct telco feeds + bank partnerships can close that gap and materially reduce SIM - swap losses.Insuring residual risk makes the product attractive to customers and partners.
