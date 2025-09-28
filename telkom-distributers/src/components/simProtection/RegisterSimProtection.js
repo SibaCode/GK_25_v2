@@ -100,7 +100,7 @@ export default function RegisterSimProtection() {
             );
 
             toast.success("SIM registered & alert created!");
-            navigate("/dashboard/home");
+            navigate("/dashboard/about");
         } catch (err) {
             console.error(err);
             toast.error("Error registering SIM.");
