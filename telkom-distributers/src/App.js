@@ -20,6 +20,8 @@ import SimProtectionDashboard from "./pages/dashboard/SimProtectionDashboard";
 
 // Dashboard Components
 import DashboardHome from "./components/dashboard/DashboardHome";
+import DashboardAbout from "./components/dashboard/DashboardAbout";
+
 import AlertsPage from "./components/dashboard/AlertsPage";
 import LinkedSims from "./components/dashboard/LinkedSims";
 import ProfilePage from "./components/dashboard/ProfilePage";
@@ -61,6 +63,7 @@ function App() {
                         <DashboardLayout>
                             <Routes>
                                 <Route path="home" element={<DashboardHome />} />
+                                <Route path="about" element={<DashboardAbout />} />
                                 <Route path="registerSim" element={<RegisterSimProtection />} />
                                 <Route path="alerts" element={<AlertsPage />} />
                                 <Route path="linked" element={<LinkedSims />} />
