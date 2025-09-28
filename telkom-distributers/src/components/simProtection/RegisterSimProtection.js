@@ -29,7 +29,7 @@ export default function RegisterSimProtection() {
         { id: "sim2", number: "0823456789", carrier: "Vodacom" },
     ];
     const banks = ["Capitec", "FNB", "Standard Bank"];
-    const insurers = ["Naked Insurance X", "1st for Women", "OutSurance Z"];
+    const insurers = ["Naked Insurance", "1st for Women", "OutSurance "];
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -100,7 +100,7 @@ export default function RegisterSimProtection() {
             );
 
             toast.success("SIM registered & alert created!");
-            navigate("/dashboard/alerts");
+            navigate("/dashboard/home");
         } catch (err) {
             console.error(err);
             toast.error("Error registering SIM.");

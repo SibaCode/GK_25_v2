@@ -4,12 +4,12 @@ import { getAuth } from "firebase/auth";
 import { doc, onSnapshot } from "firebase/firestore";
 import { db } from "../../firebase";
 import { Button } from "../ui/button";
-import toast, { Toaster } from "react-hot-toast";
+import { Toaster } from "react-hot-toast";
 
-export default function DashboardAlerts() {
+export default function AlertsPage() {
     const [alerts, setAlerts] = useState([]);
     const [search, setSearch] = useState("");
-    const [selectedAlert, setSelectedAlert] = useState(null); // for modal
+    const [selectedAlert, setSelectedAlert] = useState(null);
 
     useEffect(() => {
         const auth = getAuth();
@@ -19,22 +19,18 @@ export default function DashboardAlerts() {
         const userRef = doc(db, "users", user.uid);
         const unsub = onSnapshot(userRef, (snap) => {
             if (snap.exists()) {
-                const newAlerts = snap.data().alerts || [];
-                if (newAlerts.length > alerts.length) {
-                    toast.success("New alert received!");
-                }
-                setAlerts(newAlerts);
+                setAlerts(snap.data().alerts || []);
             }
         });
 
         return () => unsub();
-    }, [alerts.length]);
+    }, []);
 
     const filteredAlerts = alerts.filter(
         (alert) =>
-            alert.simNumber.includes(search) ||
-            alert.carrier.toLowerCase().includes(search.toLowerCase()) ||
-            alert.status.toLowerCase().includes(search.toLowerCase())
+            alert.ref.toLowerCase().includes(search.toLowerCase()) ||
+            alert.simNumber?.toLowerCase().includes(search.toLowerCase()) ||
+            alert.status?.toLowerCase().includes(search.toLowerCase())
     );
 
     return (
@@ -49,7 +45,7 @@ export default function DashboardAlerts() {
 
             <input
                 type="text"
-                placeholder="Search by SIM, Carrier, or Status"
+                placeholder="Search by Ref, SIM, or Status"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="border border-gray-300 rounded-md p-2 w-full md:w-1/3 mb-4"
@@ -63,11 +59,7 @@ export default function DashboardAlerts() {
                         <thead className="bg-gray-100 text-left text-gray-700">
                             <tr>
                                 <th className="px-4 py-3">Ref</th>
-                                <th className="px-4 py-3">SIM Number</th>
-                                <th className="px-4 py-3">Carrier</th>
-                                <th className="px-4 py-3">Rules Applied</th>
                                 <th className="px-4 py-3">Status</th>
-                                <th className="px-4 py-3">Date</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -78,22 +70,6 @@ export default function DashboardAlerts() {
                                     onClick={() => setSelectedAlert(alert)}
                                 >
                                     <td className="px-4 py-3 font-mono text-sm">{alert.ref}</td>
-                                    <td className="px-4 py-3">{alert.simNumber}</td>
-                                    <td className="px-4 py-3">{alert.carrier}</td>
-                                    <td className="px-4 py-3 text-sm text-gray-600">
-                                        <div>
-                                            <strong>Banks:</strong>{" "}
-                                            {alert.freezeBanks?.length > 0
-                                                ? alert.freezeBanks.join(", ")
-                                                : "None"}
-                                        </div>
-                                        <div>
-                                            <strong>Insurers:</strong>{" "}
-                                            {alert.notifyInsurers?.length > 0
-                                                ? alert.notifyInsurers.join(", ")
-                                                : "None"}
-                                        </div>
-                                    </td>
                                     <td className="px-4 py-3">
                                         <span
                                             className={`px-2 py-1 rounded text-xs font-semibold ${alert.status === "new"
@@ -104,11 +80,6 @@ export default function DashboardAlerts() {
                                             {alert.status}
                                         </span>
                                     </td>
-                                    <td className="px-4 py-3 text-sm text-gray-500">
-                                        {alert.createdAt?.seconds
-                                            ? new Date(alert.createdAt.seconds * 1000).toLocaleString()
-                                            : "—"}
-                                    </td>
                                 </tr>
                             ))}
                         </tbody>
@@ -118,49 +89,27 @@ export default function DashboardAlerts() {
 
             {/* Modal for selected alert */}
             {selectedAlert && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-xl shadow-lg p-6 w-96">
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-xl shadow-lg p-6 max-w-md w-full">
                         <h3 className="text-xl font-bold mb-2">Alert Details</h3>
                         <p className="text-green-600 font-semibold mb-4">
                             ? This alert has been sent to the selected banks and insurers.
                         </p>
 
-                        <p>
-                            <strong>Ref:</strong> {selectedAlert.ref}
-                        </p>
-                        <p>
-                            <strong>SIM Number:</strong> {selectedAlert.simNumber}
-                        </p>
-                        <p>
-                            <strong>Carrier:</strong> {selectedAlert.carrier}
-                        </p>
-                        <p>
-                            <strong>Alternative Email:</strong> {selectedAlert.altEmail || "—"}
-                        </p>
-                        <p>
-                            <strong>Alternative Phone:</strong> {selectedAlert.altPhone || "—"}
-                        </p>
-                        <p>
-                            <strong>Banks to Freeze:</strong>{" "}
-                            {selectedAlert.freezeBanks?.length > 0
-                                ? selectedAlert.freezeBanks.join(", ")
-                                : "None"}
-                        </p>
-                        <p>
-                            <strong>Insurers to Notify:</strong>{" "}
-                            {selectedAlert.notifyInsurers?.length > 0
-                                ? selectedAlert.notifyInsurers.join(", ")
-                                : "None"}
-                        </p>
-                        <p>
-                            <strong>Status:</strong> {selectedAlert.status}
-                        </p>
-                        <p>
-                            <strong>Date:</strong>{" "}
-                            {selectedAlert.createdAt?.seconds
-                                ? new Date(selectedAlert.createdAt.seconds * 1000).toLocaleString()
-                                : "—"}
-                        </p>
+                        <div className="space-y-2 text-gray-700">
+                            <p><strong>Ref:</strong> {selectedAlert.ref}</p>
+                            <p><strong>Status:</strong> {selectedAlert.status}</p>
+                        </div>
+
+                        <div className="mt-6">
+                            <h4 className="font-semibold mb-2">Timeline</h4>
+                            <ul className="list-disc list-inside text-gray-600">
+                                <li>SIM registered - 28 Sep 2025, 10:00 AM</li>
+                                <li>Banks notified - 28 Sep 2025, 10:05 AM</li>
+                                <li>Insurers notified - 28 Sep 2025, 10:07 AM</li>
+                                <li>Status updated (new) - 28 Sep 2025, 10:10 AM</li>
+                            </ul>
+                        </div>
 
                         <div className="flex justify-end mt-4">
                             <Button

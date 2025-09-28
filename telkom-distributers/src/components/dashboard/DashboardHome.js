@@ -4,6 +4,7 @@ import { doc, onSnapshot } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../ui/button";
+import { Toaster } from "react-hot-toast";
 
 export default function DashboardHome() {
     const [data, setData] = useState({
@@ -13,6 +14,7 @@ export default function DashboardHome() {
         alerts: [],
     });
     const [loading, setLoading] = useState(true);
+    const [selectedAlert, setSelectedAlert] = useState(null);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -36,7 +38,9 @@ export default function DashboardHome() {
                     newAlerts: alerts.filter(a => a.status === "new").length,
                     linkedSims: userData.linkedSims?.length || 0,
                     historicalAlerts: alerts.filter(a => a.status !== "new").length,
-                    alerts: alerts.sort((a, b) => new Date(b.createdAt?.seconds * 1000 || 0) - new Date(a.createdAt?.seconds * 1000 || 0)),
+                    alerts: alerts.sort(
+                        (a, b) => new Date(b.createdAt?.seconds * 1000 || 0) - new Date(a.createdAt?.seconds * 1000 || 0)
+                    ),
                 });
             }
             setLoading(false);
@@ -48,7 +52,8 @@ export default function DashboardHome() {
     if (loading) return <p className="text-white">Loading dashboard...</p>;
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 p-4">
+            <Toaster position="top-right" />
             <div className="flex justify-between items-center">
                 <div className="text-gray-700">
                     <h2 className="text-3xl font-bold mb-2">Welcome to SIM Protection</h2>
@@ -64,22 +69,14 @@ export default function DashboardHome() {
                 </Button>
             </div>
 
-            {/* Cards */}
+            {/* Summary Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="bg-white shadow-md rounded-xl p-6 hover:shadow-xl transition">
                     <h3 className="text-lg font-semibold mb-2">New Alerts</h3>
                     <p className="text-2xl font-bold text-red-500">{data.newAlerts}</p>
                 </div>
 
-                {/*<div className="bg-white shadow-md rounded-xl p-6 hover:shadow-xl transition">*/}
-                {/*    <h3 className="text-lg font-semibold mb-2">Linked SIMs</h3>*/}
-                {/*    <p className="text-2xl font-bold text-indigo-600">{data.linkedSims}</p>*/}
-                {/*</div>*/}
-
-                {/*<div className="bg-white shadow-md rounded-xl p-6 hover:shadow-xl transition">*/}
-                {/*    <h3 className="text-lg font-semibold mb-2">Historical Alerts</h3>*/}
-                {/*    <p className="text-2xl font-bold text-green-500">{data.historicalAlerts}</p>*/}
-                {/*</div>*/}
+              
             </div>
 
             {/* Alerts Table */}
@@ -104,7 +101,11 @@ export default function DashboardHome() {
                             </tr>
                         ) : (
                             data.alerts.map((alert, index) => (
-                                <tr key={index} className="hover:bg-gray-50">
+                                <tr
+                                    key={index}
+                                    className="hover:bg-gray-50 cursor-pointer"
+                                    onClick={() => setSelectedAlert(alert)}
+                                >
                                     <td className="border px-4 py-2">{alert.ref}</td>
                                     <td className="border px-4 py-2">{alert.simNumber}</td>
                                     <td className="border px-4 py-2">{alert.carrier}</td>
@@ -122,6 +123,37 @@ export default function DashboardHome() {
                     </tbody>
                 </table>
             </div>
+
+            {/* Modal for Selected Alert */}
+            {selectedAlert && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-xl shadow-lg p-6 w-96">
+                        <h3 className="text-xl font-bold mb-2">Alert Details</h3>
+                        <p className="text-green-600 font-semibold mb-4">
+                            ? This alert has been sent to the selected banks and insurers.
+                        </p>
+
+                        <p><strong>Ref:</strong> {selectedAlert.ref}</p>
+                        <p><strong>SIM Number:</strong> {selectedAlert.simNumber}</p>
+                        <p><strong>Carrier:</strong> {selectedAlert.carrier}</p>
+                        <p><strong>Alternative Email:</strong> {selectedAlert.altEmail || "—"}</p>
+                        <p><strong>Alternative Phone:</strong> {selectedAlert.altPhone || "—"}</p>
+                        <p><strong>Banks to Freeze:</strong> {selectedAlert.freezeBanks?.length > 0 ? selectedAlert.freezeBanks.join(", ") : "None"}</p>
+                        <p><strong>Insurers to Notify:</strong> {selectedAlert.notifyInsurers?.length > 0 ? selectedAlert.notifyInsurers.join(", ") : "None"}</p>
+                        <p><strong>Status:</strong> {selectedAlert.status}</p>
+                        <p><strong>Created At:</strong> {selectedAlert.createdAt ? new Date(selectedAlert.createdAt.seconds * 1000).toLocaleString() : "-"}</p>
+
+                        <div className="flex justify-end mt-4">
+                            <Button
+                                className="bg-gray-300 text-black"
+                                onClick={() => setSelectedAlert(null)}
+                            >
+                                Close
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Info Section */}
             <div className="bg-white shadow-md rounded-xl p-6">
