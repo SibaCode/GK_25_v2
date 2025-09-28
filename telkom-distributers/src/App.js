@@ -9,13 +9,14 @@ import PromotionsManagement from "./pages/PromotionsManagement";
 import SurveysManagement from "./pages/SurveysManagement";
 import LearningHubManagement from "./pages/LearningHubManagement";
 import SurveyPage from "./pages/SurveyPage";
-import FraudProtectionFormd from './pages/FraudProtectionForm';
+import SimProtectionFlow from "./pages/SimProtectionFlow";
+//import SimProtectionDashboard from "./pages/";
 
 function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<MainDashboard />} />
+        <Route path="/main" element={<MainDashboard />} />
         <Route path="/fraud" element={<FraudManagement />} />
         <Route path="/e-waste" element={<EWasteManagement />} />
         <Route path="/learning" element={<LearningHubManagement />} />
@@ -25,7 +26,8 @@ function App() {
         <Route path="/promotions" element={<PromotionsManagement />} />
         <Route path="/surveys" element={<SurveysManagement />} />
         <Route path="/survey/:id" element={<SurveyPage />} />
-              <Route path="/test" element={<FraudProtectionFormd />} />
+         <Route path="/" element={<SimProtectionFlow />} />
+              {/*<Route path="/test2" element={<SimProtectionDashboard />} />*/}
 
 
       </Routes>
