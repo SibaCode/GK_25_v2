@@ -41,7 +41,7 @@ export default function DashboardHome() {
     return (
         <div className="space-y-6">
             <div className="text-gray-700">
-                <h2 className="text-3xl font-bold mb-2">Welcome to SIM Protection</h2>
+                <h2 className="text-3xl font-bold mb-2">1Welcome to SIM Protection</h2>
                 <p className="text-gray-500">
                     Monitor your SIM cards, alerts, and linked accounts from a single dashboard.
                 </p>

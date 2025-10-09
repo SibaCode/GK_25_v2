@@ -1,96 +1,43 @@
 // src/App.js
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-import { useEffect, useState } from "react";
-import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "./firebase";
+import React from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
 // Pages
-import MainDashboard from "./pages/MainDashboard";
-import FraudManagement from "./pages/FraudManagement";
-import EWasteManagement from "./pages/EWasteManagement";
-import Community from "./pages/Community";
-import Reports from "./pages/Reports";
-import SalesManagement from "./pages/SalesManagement";
-import PromotionsManagement from "./pages/PromotionsManagement";
-import SurveysManagement from "./pages/SurveysManagement";
-import LearningHubManagement from "./pages/LearningHubManagement";
-import SurveyPage from "./pages/SurveyPage";
-import SimProtectionFlow from "./pages/SimProtectionFlow";
-import SimProtectionDashboard from "./pages/dashboard/SimProtectionDashboard";
-
-// Dashboard Components
-import DashboardHome from "./components/dashboard/DashboardHome";
-import DashboardAbout from "./components/dashboard/DashboardAbout";
-
-import AlertsPage from "./components/dashboard/AlertsPage";
-import LinkedSims from "./components/dashboard/LinkedSims";
-import ProfilePage from "./components/dashboard/ProfilePage";
-import RegisterSimProtection from "./components/simProtection/RegisterSimProtection";
-import DashboardLayout from "./components/layouts/DashboardLayout";
-import SafetyCompliance from "./components/dashboard/SafetyCompliance";
-
-// Auth Pages
-import Login from "./components/auth/Login";
-import Register from "./components/auth/Register";
+import Register from "./newPages/Register";
+import Login from "./newPages/Login";
+import Dashboard from "./newPages/Dashboard";
+import RegisterSimProtection from "./newPages/RegisterSimProtection";
 
 function App() {
-    const [user, setUser] = useState(null);
-    const [loading, setLoading] = useState(true);
+  return (
+    <Router>
+      <Routes>
+        {/* Home / Register */}
+        <Route path="/register" element={<Register />} />
 
-    // Listen for Firebase auth changes
-    useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-            setUser(currentUser);
-            setLoading(false);
-        });
-        return () => unsubscribe();
-    }, []);
+        {/* Login */}
+        <Route path="/login" element={<Login />} />
 
-    if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+        {/* Dashboard */}
+        <Route path="/dashboard" element={<Dashboard />} />
 
-    return (
-        <Router>
-            <Routes>
-                {/* Public Routes */}
-                <Route path="/login" element={!user ? <Login /> : <Navigate to="/dashboard/home" />} />
-                <Route path="/register" element={!user ? <Register /> : <Navigate to="/dashboard/home" />} />
-                <Route path="/" element={<SimProtectionFlow />} />
+        {/* Register SIM */}
+        <Route path="/register-sim" element={<RegisterSimProtection />} />
 
-                {/* Dashboard Routes (Protected) */}
-                <Route
-                    path="/dashboard/*"
-                    element={user ? (
-                        <DashboardLayout>
-                            <Routes>
-                                <Route path="home" element={<DashboardHome />} />
-                                <Route path="about" element={<DashboardAbout />} />
-                                <Route path="registerSim" element={<RegisterSimProtection />} />
-                                <Route path="alerts" element={<AlertsPage />} />
-                                <Route path="linked" element={<LinkedSims />} />
-                                <Route path="safety" element={<SafetyCompliance />} />
-                            </Routes>
-                        </DashboardLayout>
-                    ) : (
-                        <Navigate to="/login" />
-                    )}
-                />
-
-                {/* Other App Routes */}
-                <Route path="/main" element={<MainDashboard />} />
-                <Route path="/fraud" element={<FraudManagement />} />
-                <Route path="/e-waste" element={<EWasteManagement />} />
-                <Route path="/learning" element={<LearningHubManagement />} />
-                <Route path="/community" element={<Community />} />
-                <Route path="/reports" element={<Reports />} />
-                <Route path="/sales" element={<SalesManagement />} />
-                <Route path="/promotions" element={<PromotionsManagement />} />
-                <Route path="/surveys" element={<SurveysManagement />} />
-                <Route path="/survey/:id" element={<SurveyPage />} />
-                <Route path="/simflow" element={<SimProtectionFlow />} />
-                <Route path="/simdashboard" element={<SimProtectionDashboard />} />
-            </Routes>
-        </Router>
-    );
+        {/* Default route */}
+        <Route
+          path="/"
+          element={
+            <div className="min-h-screen flex items-center justify-center bg-blue-50 px-4">
+              <h1 className="text-3xl font-bold text-blue-700 text-center">
+                Welcome to SIM Protection
+              </h1>
+            </div>
+          }
+        />
+      </Routes>
+    </Router>
+  );
 }
 
 export default App;
