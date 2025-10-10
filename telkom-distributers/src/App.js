@@ -7,8 +7,8 @@ import Register from "./newPages/Register";
 import Login from "./newPages/Login";
 import Dashboard from "./newPages/Dashboard";
 import RegisterSimProtection from "./newPages/RegisterSimProtection";
-import SafetyCompliance from "./components/dashboard/SafetyCompliance";
-
+import AlertsPage from "./newPages/AlertsPage";
+import SimActivity from "./newPages/SimActivity";
 function App() {
   return (
     <Router>
@@ -24,7 +24,7 @@ function App() {
 
         {/* Register SIM */}
         <Route path="/register-sim" element={<RegisterSimProtection />} />
-                                <Route path="safety" element={<SafetyCompliance />} />
+                                <Route path="trigger" element={<SimActivity />} />
 
         {/* Default route */}
         <Route
