@@ -74,7 +74,7 @@ const RegisterSimProtection = () => {
         className="bg-white shadow-lg rounded-2xl p-6 w-full max-w-md"
       >
         <h1 className="text-2xl font-bold text-blue-700 text-center mb-2">
-          SIM Protection Setup
+          SIM Protection Setup1
         </h1>
         <p className="text-sm text-gray-600 text-center mb-6">
           Secure your SIM by verifying your identity and setting custom alerts.
