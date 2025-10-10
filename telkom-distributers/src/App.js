@@ -20,7 +20,7 @@ function App() {
         <Route path="/login" element={<Login />} />
 
         {/* Dashboard */}
-        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/" element={<Dashboard />} />
 
         {/* Register SIM */}
         <Route path="/register-sim" element={<RegisterSimProtection />} />
@@ -28,7 +28,7 @@ function App() {
 
         {/* Default route */}
         <Route
-          path="/"
+          path="/y"
           element={
             <div className="min-h-screen flex items-center justify-center bg-blue-50 px-4">
               <h1 className="text-3xl font-bold text-blue-700 text-center">
