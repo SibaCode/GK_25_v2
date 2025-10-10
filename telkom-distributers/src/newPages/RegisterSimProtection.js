@@ -2,8 +2,8 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { Mail, Phone, Lock, User, Plus, X } from "lucide-react";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
-import { db } from "../firebase";
+import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { db, auth } from "../firebase";
 
 const RegisterSimProtection = ({ onClose }) => {
   const [formData, setFormData] = useState({
@@ -30,7 +30,6 @@ const RegisterSimProtection = ({ onClose }) => {
     bankName: /^[A-Za-z\s]{2,}$/,
   };
 
-  // Helper to validate fields
   const validateField = (name, value, index = null) => {
     let error = "";
     switch (name) {
@@ -63,8 +62,8 @@ const RegisterSimProtection = ({ onClose }) => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
-    setErrors({ ...errors, [name]: validateField(name, value) });
+    setFormData(prev => ({ ...prev, [name]: value }));
+    setErrors(prev => ({ ...prev, [name]: validateField(name, value) }));
   };
 
   const handleKinChange = (index, field, value) => {
@@ -72,9 +71,9 @@ const RegisterSimProtection = ({ onClose }) => {
     if (field === "name") value = value.replace(/[^A-Za-z\s]/g, "");
     if (field === "number") value = value.replace(/[^0-9]/g, "").slice(0, 10);
     updatedKin[index][field] = value;
-    setFormData({ ...formData, nextOfKin: updatedKin });
+    setFormData(prev => ({ ...prev, nextOfKin: updatedKin }));
     const errorField = field === "name" ? `nextOfKinName-${index}` : `nextOfKinNumber-${index}`;
-    setErrors({ ...errors, [errorField]: validateField(field === "name" ? "nextOfKinName" : "nextOfKinNumber", value) });
+    setErrors(prev => ({ ...prev, [errorField]: validateField(field === "name" ? "nextOfKinName" : "nextOfKinNumber", value) }));
   };
 
   const handleBankChange = (index, field, value) => {
@@ -82,16 +81,16 @@ const RegisterSimProtection = ({ onClose }) => {
     if (field === "bankName") value = value.replace(/[^A-Za-z\s]/g, "");
     if (field === "accountNumber") value = value.replace(/[^0-9]/g, "").slice(0, 20);
     updatedAccounts[index][field] = value;
-    setFormData({ ...formData, bankAccounts: updatedAccounts });
+    setFormData(prev => ({ ...prev, bankAccounts: updatedAccounts }));
     const errorField = field === "bankName" ? `bankName-${index}` : `accountNumber-${index}`;
-    setErrors({ ...errors, [errorField]: validateField(field === "bankName" ? "bankName" : "accountNumber", value) });
+    setErrors(prev => ({ ...prev, [errorField]: validateField(field === "bankName" ? "bankName" : "accountNumber", value) }));
   };
 
-  const handleToggle = (field) => setFormData({ ...formData, [field]: !formData[field] });
-  const addNextOfKin = () => setFormData({ ...formData, nextOfKin: [...formData.nextOfKin, { name: "", number: "" }] });
-  const removeNextOfKin = (index) => setFormData({ ...formData, nextOfKin: formData.nextOfKin.filter((_, i) => i !== index) });
-  const addBankAccount = () => setFormData({ ...formData, bankAccounts: [...formData.bankAccounts, { bankName: "", accountNumber: "" }] });
-  const removeBankAccount = (index) => setFormData({ ...formData, bankAccounts: formData.bankAccounts.filter((_, i) => i !== index) });
+  const handleToggle = (field) => setFormData(prev => ({ ...prev, [field]: !prev[field] }));
+  const addNextOfKin = () => setFormData(prev => ({ ...prev, nextOfKin: [...prev.nextOfKin, { name: "", number: "" }] }));
+  const removeNextOfKin = (index) => setFormData(prev => ({ ...prev, nextOfKin: prev.nextOfKin.filter((_, i) => i !== index) }));
+  const addBankAccount = () => setFormData(prev => ({ ...prev, bankAccounts: [...prev.bankAccounts, { bankName: "", accountNumber: "" }] }));
+  const removeBankAccount = (index) => setFormData(prev => ({ ...prev, bankAccounts: prev.bankAccounts.filter((_, i) => i !== index) }));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -99,12 +98,10 @@ const RegisterSimProtection = ({ onClose }) => {
     let formHasError = false;
     const newErrors = {};
 
-    // Main fields
     if (!regex.idNumber.test(formData.idNumber)) { newErrors.idNumber = "ID number must be 13 digits"; formHasError = true; }
     if (!regex.phone.test(formData.selectedNumber)) { newErrors.selectedNumber = "Phone number must be 10 digits"; formHasError = true; }
     if (formData.emailAlert && !regex.email.test(formData.email)) { newErrors.email = "Invalid email"; formHasError = true; }
 
-    // Next of Kin
     if (formData.nextOfKinAlert) {
       formData.nextOfKin.forEach((kin, index) => {
         if (!regex.name.test(kin.name)) { newErrors[`nextOfKinName-${index}`] = "Name must be letters only"; formHasError = true; }
@@ -112,7 +109,6 @@ const RegisterSimProtection = ({ onClose }) => {
       });
     }
 
-    // Bank Accounts
     if (formData.bankAccount) {
       formData.bankAccounts.forEach((acc, index) => {
         if (!regex.bankName.test(acc.bankName)) { newErrors[`bankName-${index}`] = "Bank name must be letters only"; formHasError = true; }
@@ -124,16 +120,24 @@ const RegisterSimProtection = ({ onClose }) => {
 
     setLoading(true);
     try {
-      await addDoc(collection(db, "simProtection"), { ...formData, createdAt: serverTimestamp() });
+      if (!auth.currentUser) throw new Error("User not logged in");
+
+      await setDoc(doc(db, "users", auth.currentUser.uid), {
+        simProtection: formData,
+        createdAt: serverTimestamp()
+      }, { merge: true });
+
       alert("SIM Protection saved successfully!");
       if (onClose) onClose();
     } catch (error) {
       console.error("Error saving SIM protection:", error);
       alert("Failed to save SIM protection. Try again.");
-    } finally { setLoading(false); }
+    } finally {
+      setLoading(false);
+    }
   };
 
-  return (
+ return (
     <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }} className="bg-white rounded-2xl shadow-xl w-full overflow-y-auto relative">
       <div className="p-6">
         <h1 className="text-2xl font-bold text-blue-700 text-center mb-2">SIM Protection Setup</h1>
