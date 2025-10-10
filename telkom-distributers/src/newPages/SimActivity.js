@@ -2,8 +2,9 @@
 import React, { useState, useEffect } from "react";
 import { auth, db } from "../firebase";
 import { signOut } from "firebase/auth";
-import { doc, getDoc, updateDoc, arrayUnion, Timestamp } from "firebase/firestore";
+import { doc, getDoc, updateDoc, arrayUnion, Timestamp, onSnapshot } from "firebase/firestore";
 import { LogOut } from "lucide-react";
+import emailjs from "@emailjs/browser";
 
 export default function SimActivity() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -11,25 +12,32 @@ export default function SimActivity() {
   const [selectedSim, setSelectedSim] = useState("");
   const [triggering, setTriggering] = useState(false);
 
-  // Fetch user data
+  // Fetch user data and listen for real-time updates
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(async (user) => {
+    const unsubscribeAuth = auth.onAuthStateChanged(async (user) => {
       if (user) {
         const docRef = doc(db, "users", user.uid);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          setCurrentUser(data);
-          // pre-fill the first registered SIM
-          const firstSim = data.simProtection?.selectedNumber || 
-                           (data.simProtection?.bankAccounts?.[0]?.accountNumber ?? "");
-          setSelectedSim(firstSim);
-        }
+        const unsubscribeSnapshot = onSnapshot(docRef, (docSnap) => {
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            setCurrentUser(data);
+
+            // pre-fill the first registered SIM
+            const firstSim =
+              data.simProtection?.selectedNumber ||
+              (data.simProtection?.bankAccounts?.[0]?.accountNumber ?? "");
+            setSelectedSim(firstSim);
+          }
+          setLoading(false);
+        });
+
+        return () => unsubscribeSnapshot();
+      } else {
+        setLoading(false);
       }
-      setLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => unsubscribeAuth();
   }, []);
 
   const handleLogout = async () => {
@@ -50,20 +58,35 @@ export default function SimActivity() {
       const newAlert = {
         simNumber: selectedSim,
         timestamp: Timestamp.now(),
-        affectedBanks: currentUser.simProtection?.bankAccounts?.map(b => b.bankName) || [],
-        notifiedNextOfKin: currentUser.simProtection?.nextOfKin?.map(n => n.name) || [],
-        status: "pending"
+        affectedBanks: currentUser.simProtection?.bankAccounts?.map((b) => b.bankName) || [],
+        notifiedNextOfKin: currentUser.simProtection?.nextOfKin?.map((n) => n.name) || [],
+        status: "pending",
       };
+
+      // Save alert in Firestore
       await updateDoc(docRef, {
-        "simProtection.activeAlertsArray": arrayUnion(newAlert)
+        "simProtection.activeAlertsArray": arrayUnion(newAlert),
       });
-      // Refresh user data
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) setCurrentUser(docSnap.data());
-      alert("Alert triggered successfully!");
+
+      // Send email via EmailJS
+      await emailjs.send(
+        "service_gs10hsn",       // Your Service ID
+        "template_tu6ca39",      // Your Template ID
+        {
+          sim_number: newAlert.simNumber,
+          affected_banks: newAlert.affectedBanks.join(", "),
+          notified: newAlert.notifiedNextOfKin.join(", "),
+          status: newAlert.status,
+          time: newAlert.timestamp.toDate().toLocaleString(),
+          to_email: currentUser.email,
+        },
+        "3U2Dnx4hFe8-eLaQk"         // Replace with your EmailJS public key
+      );
+
+      alert("Alert triggered and email sent successfully!");
     } catch (error) {
       console.error(error);
-      alert("Failed to trigger alert.");
+      alert("Failed to trigger alert or send email.");
     }
     setTriggering(false);
   };
@@ -74,7 +97,7 @@ export default function SimActivity() {
   const simNumbers = [];
   if (currentUser.simProtection?.selectedNumber) simNumbers.push(currentUser.simProtection.selectedNumber);
   if (currentUser.simProtection?.bankAccounts) {
-    currentUser.simProtection.bankAccounts.forEach(acc => {
+    currentUser.simProtection.bankAccounts.forEach((acc) => {
       if (!simNumbers.includes(acc.accountNumber)) simNumbers.push(acc.accountNumber);
     });
   }
@@ -88,7 +111,7 @@ export default function SimActivity() {
         <div className="lg:col-span-1 bg-white rounded-2xl shadow-md p-6 sticky top-4">
           <div className="flex items-center gap-4 mb-4">
             <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-lg">
-              {currentUser.fullName?.split(" ").map(n => n[0]).join("") || "U"}
+              {currentUser.fullName?.split(" ").map((n) => n[0]).join("") || "U"}
             </div>
             <div>
               <h2 className="font-bold text-gray-700">{currentUser.fullName}</h2>
@@ -145,7 +168,7 @@ export default function SimActivity() {
             {alerts.length === 0 && <p className="text-sm text-gray-500">No alerts yet.</p>}
             <ul className="space-y-3">
               {alerts.map((alert, idx) => (
-                <li key={idx} className="border-l-2 border-blue-500 pl-3">
+                <li key={idx} className="border-l-2 border-blue-500 pl-3 p-2 rounded-md hover:bg-gray-50 transition">
                   <p className="text-sm font-semibold">SIM: {alert.simNumber}</p>
                   <p className="text-sm">Time: {alert.timestamp?.toDate().toLocaleString()}</p>
                   <p className="text-sm">Affected Banks: {alert.affectedBanks.join(", ") || "-"}</p>

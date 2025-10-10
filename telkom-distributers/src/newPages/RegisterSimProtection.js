@@ -1,223 +1,194 @@
-// src/newDash/dashboard/RegisterSimProtection.js
-import React, { useState } from "react";
-import { motion } from "framer-motion";
-import { Mail, Phone, Lock, User, Plus, X } from "lucide-react";
-import { doc, setDoc, serverTimestamp } from "firebase/firestore";
-import { db, auth } from "../firebase";
+// src/newPages/SimActivity.js
+import React, { useState, useEffect } from "react";
+import { auth, db } from "../firebase";
+import { signOut } from "firebase/auth";
+import { doc, getDoc, updateDoc, arrayUnion, Timestamp, onSnapshot } from "firebase/firestore";
+import { LogOut } from "lucide-react";
+import emailjs from "@emailjs/browser";
 
-const RegisterSimProtection = ({ onClose }) => {
-  const [formData, setFormData] = useState({
-    idNumber: "",
-    selectedNumber: "",
-    emailAlert: false,
-    email: "",
-    nextOfKinAlert: false,
-    nextOfKin: [{ name: "", number: "" }],
-    autoLock: false,
-    bankAccount: false,
-    bankAccounts: [{ bankName: "", accountNumber: "" }],
-  });
+export default function SimActivity() {
+  const [currentUser, setCurrentUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [selectedSim, setSelectedSim] = useState("");
+  const [triggering, setTriggering] = useState(false);
 
-  const [errors, setErrors] = useState({});
-  const [loading, setLoading] = useState(false);
+  // Fetch user data + listen for real-time updates
+  useEffect(() => {
+    const unsubscribeAuth = auth.onAuthStateChanged(async (user) => {
+      if (user) {
+        const docRef = doc(db, "users", user.uid);
+        const unsubscribeSnapshot = onSnapshot(docRef, (docSnap) => {
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            setCurrentUser(data);
 
-  const regex = {
-    idNumber: /^\d{13}$/,
-    phone: /^0\d{9}$/,
-    email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-    name: /^[A-Za-z\s]{2,}$/,
-    bankAccount: /^\d{6,20}$/,
-    bankName: /^[A-Za-z\s]{2,}$/,
-  };
+            const firstSim =
+              data.simProtection?.selectedNumber ||
+              (data.simProtection?.bankAccounts?.[0]?.accountNumber ?? "");
+            setSelectedSim(firstSim);
+          }
+          setLoading(false);
+        });
 
-  const validateField = (name, value, index = null) => {
-    let error = "";
-    switch (name) {
-      case "idNumber":
-        if (!regex.idNumber.test(value)) error = "ID number must be 13 digits";
-        break;
-      case "selectedNumber":
-        if (!regex.phone.test(value)) error = "Phone number must be 10 digits";
-        break;
-      case "email":
-        if (formData.emailAlert && !regex.email.test(value)) error = "Invalid email address";
-        break;
-      case "nextOfKinName":
-        if (!regex.name.test(value)) error = "Name must be letters only";
-        break;
-      case "nextOfKinNumber":
-        if (!regex.phone.test(value)) error = "Phone must be 10 digits";
-        break;
-      case "bankName":
-        if (!regex.bankName.test(value)) error = "Bank name must be letters only";
-        break;
-      case "accountNumber":
-        if (!regex.bankAccount.test(value)) error = "Account number must be 6–20 digits";
-        break;
-      default:
-        break;
-    }
-    return error;
-  };
+        return () => unsubscribeSnapshot();
+      } else {
+        setLoading(false);
+      }
+    });
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-    setErrors(prev => ({ ...prev, [name]: validateField(name, value) }));
-  };
+    return () => unsubscribeAuth();
+  }, []);
 
-  const handleKinChange = (index, field, value) => {
-    const updatedKin = [...formData.nextOfKin];
-    if (field === "name") value = value.replace(/[^A-Za-z\s]/g, "");
-    if (field === "number") value = value.replace(/[^0-9]/g, "").slice(0, 10);
-    updatedKin[index][field] = value;
-    setFormData(prev => ({ ...prev, nextOfKin: updatedKin }));
-    const errorField = field === "name" ? `nextOfKinName-${index}` : `nextOfKinNumber-${index}`;
-    setErrors(prev => ({ ...prev, [errorField]: validateField(field === "name" ? "nextOfKinName" : "nextOfKinNumber", value) }));
-  };
-
-  const handleBankChange = (index, field, value) => {
-    const updatedAccounts = [...formData.bankAccounts];
-    if (field === "bankName") value = value.replace(/[^A-Za-z\s]/g, "");
-    if (field === "accountNumber") value = value.replace(/[^0-9]/g, "").slice(0, 20);
-    updatedAccounts[index][field] = value;
-    setFormData(prev => ({ ...prev, bankAccounts: updatedAccounts }));
-    const errorField = field === "bankName" ? `bankName-${index}` : `accountNumber-${index}`;
-    setErrors(prev => ({ ...prev, [errorField]: validateField(field === "bankName" ? "bankName" : "accountNumber", value) }));
-  };
-
-  const handleToggle = (field) => setFormData(prev => ({ ...prev, [field]: !prev[field] }));
-  const addNextOfKin = () => setFormData(prev => ({ ...prev, nextOfKin: [...prev.nextOfKin, { name: "", number: "" }] }));
-  const removeNextOfKin = (index) => setFormData(prev => ({ ...prev, nextOfKin: prev.nextOfKin.filter((_, i) => i !== index) }));
-  const addBankAccount = () => setFormData(prev => ({ ...prev, bankAccounts: [...prev.bankAccounts, { bankName: "", accountNumber: "" }] }));
-  const removeBankAccount = (index) => setFormData(prev => ({ ...prev, bankAccounts: prev.bankAccounts.filter((_, i) => i !== index) }));
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    let formHasError = false;
-    const newErrors = {};
-
-    if (!regex.idNumber.test(formData.idNumber)) { newErrors.idNumber = "ID number must be 13 digits"; formHasError = true; }
-    if (!regex.phone.test(formData.selectedNumber)) { newErrors.selectedNumber = "Phone number must be 10 digits"; formHasError = true; }
-    if (formData.emailAlert && !regex.email.test(formData.email)) { newErrors.email = "Invalid email"; formHasError = true; }
-
-    if (formData.nextOfKinAlert) {
-      formData.nextOfKin.forEach((kin, index) => {
-        if (!regex.name.test(kin.name)) { newErrors[`nextOfKinName-${index}`] = "Name must be letters only"; formHasError = true; }
-        if (!regex.phone.test(kin.number)) { newErrors[`nextOfKinNumber-${index}`] = "Phone must be 10 digits"; formHasError = true; }
-      });
-    }
-
-    if (formData.bankAccount) {
-      formData.bankAccounts.forEach((acc, index) => {
-        if (!regex.bankName.test(acc.bankName)) { newErrors[`bankName-${index}`] = "Bank name must be letters only"; formHasError = true; }
-        if (!regex.bankAccount.test(acc.accountNumber)) { newErrors[`accountNumber-${index}`] = "Account number must be 6–20 digits"; formHasError = true; }
-      });
-    }
-
-    if (formHasError) { setErrors(newErrors); return alert("Please fix the errors before submitting."); }
-
-    setLoading(true);
+  const handleLogout = async () => {
     try {
-      if (!auth.currentUser) throw new Error("User not logged in");
-
-      await setDoc(doc(db, "users", auth.currentUser.uid), {
-        simProtection: formData,
-        createdAt: serverTimestamp()
-      }, { merge: true });
-
-      alert("SIM Protection saved successfully!");
-      if (onClose) onClose();
+      await signOut(auth);
+      window.location.href = "/login";
     } catch (error) {
-      console.error("Error saving SIM protection:", error);
-      alert("Failed to save SIM protection. Try again.");
-    } finally {
-      setLoading(false);
+      console.error("Logout failed:", error);
+      alert("Failed to logout. Try again.");
     }
   };
 
- return (
-    <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }} className="bg-white rounded-2xl shadow-xl w-full overflow-y-auto relative">
-      <div className="p-6">
-        <h1 className="text-2xl font-bold text-blue-700 text-center mb-2">SIM Protection Setup</h1>
-        <p className="text-sm text-gray-600 text-center mb-6">Secure your SIM by verifying your identity and setting custom alerts.</p>
+  const handleTriggerAlert = async () => {
+    if (!selectedSim) return;
+    setTriggering(true);
 
-        <form onSubmit={handleSubmit} className="space-y-5">
-          {/* ID Number */}
+    try {
+      const docRef = doc(db, "users", auth.currentUser.uid);
+      const newAlert = {
+        simNumber: selectedSim,
+        timestamp: Timestamp.now(),
+        affectedBanks: currentUser.simProtection?.bankAccounts?.map((b) => b.bankName) || [],
+        nextOfKin: currentUser.simProtection?.nextOfKin?.map((n) => `${n.name} (${n.number})`) || [],
+        status: "Triggered",
+      };
+
+      // Save alert in Firestore
+      await updateDoc(docRef, {
+        "simProtection.activeAlertsArray": arrayUnion(newAlert),
+      });
+
+      // Prepare email details
+      const sim_number = newAlert.simNumber;
+      const affected_banks = newAlert.affectedBanks.join(", ") || "None";
+      const next_of_kin = newAlert.nextOfKin.join(", ") || "None";
+      const status = newAlert.status;
+      const time = new Date().toLocaleString();
+      const to_email = currentUser.email; // Send to user’s email
+
+      // Send email via EmailJS
+      await emailjs.send(
+        "service_gs10hsn",       // ✅ Your Service ID
+        "template_tu6ca39",      // ✅ Your Template ID
+        { sim_number, affected_banks, next_of_kin, status, time, to_email },
+        "3U2Dnx4hFe8-eLaQk"      // ✅ Your Public Key
+      );
+
+      alert("🚨 Alert triggered and email sent successfully!");
+    } catch (error) {
+      console.error("Error triggering alert:", error);
+      alert("❌ Failed to trigger alert or send email.");
+    }
+
+    setTriggering(false);
+  };
+
+  if (loading) return <p className="text-center mt-10">Loading SIM data...</p>;
+  if (!currentUser) return <p className="text-center mt-10">No user logged in</p>;
+
+  const simNumbers = [];
+  if (currentUser.simProtection?.selectedNumber) simNumbers.push(currentUser.simProtection.selectedNumber);
+  if (currentUser.simProtection?.bankAccounts) {
+    currentUser.simProtection.bankAccounts.forEach((acc) => {
+      if (!simNumbers.includes(acc.accountNumber)) simNumbers.push(acc.accountNumber);
+    });
+  }
+
+  const alerts = currentUser.simProtection?.activeAlertsArray || [];
+
+  return (
+    <div className="min-h-screen bg-gray-50 p-4">
+      <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-6">
+        {/* Sidebar */}
+        <div className="lg:col-span-1 bg-white rounded-2xl shadow-md p-6 sticky top-4">
+          <div className="flex items-center gap-4 mb-4">
+            <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-lg">
+              {currentUser.fullName?.split(" ").map((n) => n[0]).join("") || "U"}
+            </div>
+            <div>
+              <h2 className="font-bold text-gray-700">{currentUser.fullName}</h2>
+              <p className="text-sm text-gray-500">{currentUser.email}</p>
+              <p className="text-sm text-gray-500">{currentUser.phone}</p>
+            </div>
+          </div>
+
           <div>
-            <label className="block text-gray-700 font-medium mb-1">ID Number</label>
-            <p className="text-xs text-gray-500 mb-1">Enter your 13-digit South African ID number.</p>
-            <input type="text" name="idNumber" value={formData.idNumber} onChange={handleChange} placeholder="e.g., 9001015800087" className={`w-full border px-3 py-2 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none ${errors.idNumber ? "border-red-500" : "border-gray-300"}`} required />
-            {errors.idNumber && <p className="text-red-500 text-sm mt-1">{errors.idNumber}</p>}
+            <h3 className="font-semibold text-gray-700 mb-2">Next of Kin</h3>
+            {currentUser.simProtection?.nextOfKin?.length
+              ? currentUser.simProtection.nextOfKin.map((kin, idx) => (
+                  <div key={idx} className="text-sm text-gray-600 mb-1">
+                    {kin.name} - {kin.number}
+                  </div>
+                ))
+              : <p className="text-sm text-gray-500">No next of kin added</p>}
           </div>
 
-          {/* Linked Number */}
-          <div>
-            <label className="block text-gray-700 font-medium mb-1">Linked Number</label>
-            <p className="text-xs text-gray-500 mb-1">Enter the phone number you want to protect (10 digits, e.g., 0831234567).</p>
-            <input type="text" name="selectedNumber" value={formData.selectedNumber} onChange={handleChange} placeholder="0831234567" className={`w-full border px-3 py-2 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none ${errors.selectedNumber ? "border-red-500" : "border-gray-300"}`} required />
-            {errors.selectedNumber && <p className="text-red-500 text-sm mt-1">{errors.selectedNumber}</p>}
+          <button
+            onClick={handleLogout}
+            className="mt-4 flex items-center gap-2 bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition"
+          >
+            <LogOut className="w-4 h-4" /> Logout
+          </button>
+        </div>
+
+        {/* Main Content */}
+        <div className="lg:col-span-3 space-y-6">
+          {/* SIM Selection */}
+          <div className="bg-white p-6 rounded-2xl shadow-md text-gray-700">
+            <h2 className="text-lg font-bold mb-2">Trigger SIM Activity</h2>
+            <p className="text-sm mb-2">Select a SIM to trigger an alert:</p>
+            <select
+              className="border rounded-lg p-2 mb-4 w-full"
+              value={selectedSim}
+              onChange={(e) => setSelectedSim(e.target.value)}
+            >
+              {simNumbers.map((sim, idx) => (
+                <option key={idx} value={sim}>{sim}</option>
+              ))}
+            </select>
+            <button
+              onClick={handleTriggerAlert}
+              disabled={triggering}
+              className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition"
+            >
+              {triggering ? "Triggering..." : "Trigger Alert"}
+            </button>
           </div>
 
-          {/* Email Alert */}
-          <div className="flex items-center justify-between">
-            <label className="flex items-center gap-2 text-gray-700"><Mail className="w-5 h-5 text-blue-600" /> Send Alert to My Email</label>
-            <input type="checkbox" checked={formData.emailAlert} onChange={() => handleToggle("emailAlert")} className="w-5 h-5 accent-blue-600" />
+          {/* Alert Timeline */}
+          <div className="bg-white p-6 rounded-2xl shadow-md text-gray-700">
+            <h2 className="text-lg font-bold mb-4">Alert Timeline</h2>
+            {alerts.length === 0 ? (
+              <p className="text-sm text-gray-500">No alerts yet.</p>
+            ) : (
+              <div className="space-y-3">
+                {alerts.map((alert, idx) => (
+                  <div
+                    key={idx}
+                    className="border border-gray-200 rounded-lg p-4 hover:bg-blue-50 transition"
+                  >
+                    <p className="text-sm font-semibold text-blue-700">📱 SIM: {alert.simNumber}</p>
+                    <p className="text-xs text-gray-500">⏰ {alert.timestamp?.toDate().toLocaleString()}</p>
+                    <p className="text-sm mt-1">🏦 <strong>Banks:</strong> {alert.affectedBanks.join(", ") || "-"}</p>
+                    <p className="text-sm">👨‍👩‍👧 <strong>Next of Kin:</strong> {alert.nextOfKin.join(", ") || "-"}</p>
+                    <p className="text-sm font-medium mt-1 text-green-600">🔔 Status: {alert.status}</p>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-          {formData.emailAlert && (
-            <div className="space-y-1">
-              <input type="email" name="email" value={formData.email} onChange={handleChange} placeholder="user@example.com" className={`w-full border px-3 py-2 rounded-lg mt-2 focus:ring-2 focus:ring-blue-500 outline-none ${errors.email ? "border-red-500" : "border-gray-300"}`} required />
-              {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
-            </div>
-          )}
-
-          {/* Next of Kin */}
-          <div className="flex items-center justify-between">
-            <label className="flex items-center gap-2 text-gray-700"><Phone className="w-5 h-5 text-blue-600" /> Send Alert to My Next of Kin</label>
-            <input type="checkbox" checked={formData.nextOfKinAlert} onChange={() => handleToggle("nextOfKinAlert")} className="w-5 h-5 accent-blue-600" />
-          </div>
-          {formData.nextOfKinAlert && formData.nextOfKin.map((kin, index) => (
-            <div key={index} className="flex flex-col border border-gray-200 p-3 rounded-lg relative">
-              {formData.nextOfKin.length > 1 && <button type="button" onClick={() => removeNextOfKin(index)} className="absolute top-2 right-2 text-red-500 hover:text-red-700"><X size={16} /></button>}
-              <input type="text" placeholder="Full Name" value={kin.name} onChange={(e) => handleKinChange(index, "name", e.target.value)} className={`border px-3 py-2 rounded-lg mb-1 focus:ring-2 focus:ring-blue-500 outline-none ${errors[`nextOfKinName-${index}`] ? "border-red-500" : "border-gray-300"}`} required />
-              {errors[`nextOfKinName-${index}`] && <p className="text-red-500 text-sm mt-1">{errors[`nextOfKinName-${index}`]}</p>}
-              <input type="text" placeholder="Phone Number" value={kin.number} onChange={(e) => handleKinChange(index, "number", e.target.value)} className={`border px-3 py-2 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none ${errors[`nextOfKinNumber-${index}`] ? "border-red-500" : "border-gray-300"}`} required />
-              {errors[`nextOfKinNumber-${index}`] && <p className="text-red-500 text-sm mt-1">{errors[`nextOfKinNumber-${index}`]}</p>}
-            </div>
-          ))}
-          {formData.nextOfKinAlert && <button type="button" onClick={addNextOfKin} className="flex items-center gap-1 text-blue-600 hover:text-blue-800 text-sm font-medium"><Plus size={16} /> Add Another Next of Kin</button>}
-
-          {/* Auto Lock */}
-          <div className="flex items-center justify-between">
-            <label className="flex items-center gap-2 text-gray-700"><Lock className="w-5 h-5 text-blue-600" /> Auto-lock SIM if Suspicious Activity</label>
-            <input type="checkbox" checked={formData.autoLock} onChange={() => handleToggle("autoLock")} className="w-5 h-5 accent-blue-600" />
-          </div>
-
-          {/* Bank Accounts */}
-          <div className="flex items-center justify-between">
-            <label className="flex items-center gap-2 text-gray-700"><User className="w-5 h-5 text-blue-600" /> Link My Bank Account</label>
-            <input type="checkbox" checked={formData.bankAccount} onChange={() => handleToggle("bankAccount")} className="w-5 h-5 accent-blue-600" />
-          </div>
-          {formData.bankAccount && formData.bankAccounts.map((acc, index) => (
-            <div key={index} className="flex flex-col border border-gray-200 p-3 rounded-lg relative">
-              {formData.bankAccounts.length > 1 && <button type="button" onClick={() => removeBankAccount(index)} className="absolute top-2 right-2 text-red-500 hover:text-red-700"><X size={16} /></button>}
-              <input type="text" placeholder="Bank Name" value={acc.bankName} onChange={(e) => handleBankChange(index, "bankName", e.target.value)} className={`border px-3 py-2 rounded-lg mb-1 focus:ring-2 focus:ring-blue-500 outline-none ${errors[`bankName-${index}`] ? "border-red-500" : "border-gray-300"}`} required />
-              {errors[`bankName-${index}`] && <p className="text-red-500 text-sm mt-1">{errors[`bankName-${index}`]}</p>}
-              <input type="text" placeholder="Account Number" value={acc.accountNumber} onChange={(e) => handleBankChange(index, "accountNumber", e.target.value)} className={`border px-3 py-2 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none ${errors[`accountNumber-${index}`] ? "border-red-500" : "border-gray-300"}`} required />
-              {errors[`accountNumber-${index}`] && <p className="text-red-500 text-sm mt-1">{errors[`accountNumber-${index}`]}</p>}
-            </div>
-          ))}
-          {formData.bankAccount && <button type="button" onClick={addBankAccount} className="flex items-center gap-1 text-blue-600 hover:text-blue-800 text-sm font-medium"><Plus size={16} /> Add Another Account</button>}
-
-          {/* Submit */}
-          <motion.button whileTap={{ scale: 0.97 }} type="submit" className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition" disabled={loading}>
-            {loading ? "Saving..." : "Save Protection Settings"}
-          </motion.button>
-        </form>
+        </div>
       </div>
-    </motion.div>
+    </div>
   );
-};
-
-export default RegisterSimProtection;
+}
