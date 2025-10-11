@@ -117,22 +117,32 @@ const translations = {
 
 const RegisterSimProtection = ({ onClose }) => {
   const [formData, setFormData] = useState({
-    idNumber: "",
-    selectedNumber: "",
-    preferredLanguage: "en", // default
-    emailAlert: false,
-    email: "",
-    nextOfKinAlert: false,
-    nextOfKin: [{ name: "", number: "" }],
-    autoLock: false,
-    bankAccount: false,
-    bankAccounts: [{ bankName: "", accountNumber: "" }],
-    consent: false,
-  });
+   idNumber: "9001015800087",
+  selectedNumber: "0821234567",
+  preferredLanguage: "en",
+  emailAlert: true,
+  email: "mvubusiba@gmail.com",
+  nextOfKinAlert: true,
+  nextOfKin: [
+    { name: "T Mvubu", number: "0837654321" },
+    { name: "John Mvubu", number: "0849876543" }
+  ],
+  autoLock: true,
+  bankAccount: true,
+  bankAccounts: [
+    { bankName: "FNB", accountNumber: "1234567890" },
+    { bankName: "Standard Bank", accountNumber: "0987654321" }
+  ],
+  consent: true,
 
+  });
+const [linkedSims, setLinkedSims] = useState([
+  { number: "0821234567", status: "Active", provider: "Vodacom" },
+  { number: "0839876543", status: "Inactive", provider: "MTN" }
+]);
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
-  const [linkedSims, setLinkedSims] = useState([]);
+  // const [linkedSims, setLinkedSims] = useState([]);
   const [loadingSims, setLoadingSims] = useState(false);
 
   const regex = {

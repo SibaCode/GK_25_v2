@@ -183,15 +183,13 @@ export default function Dashboard() {
               </div>
 
               {/* Last Updated */}
-              <div className="bg-gray-200 text-gray-800 p-5 rounded-2xl flex flex-col justify-center text-center shadow-sm">
-                <Clock className="w-8 h-8 mb-2 transform transition duration-300 hover:scale-110" />
-                <p className="text-sm">{t("lastUpdated")}</p>
-                <p className="text-2xl font-semibold mt-1">
-                  {currentUser.simProtection?.createdAt?.toDate
-                    ? currentUser.simProtection.createdAt.toDate().toLocaleString()
-                    : "-"}
-                </p>
-              </div>
+             <div className="bg-gray-200 text-gray-800 p-5 rounded-2xl flex flex-col justify-center text-center shadow-sm">
+              <Clock className="w-8 h-8 mb-2 transform transition duration-300 hover:scale-110" />
+              <p className="text-sm">{t("lastUpdated")}</p>
+              <p className="text-2xl font-semibold mt-1">
+                {new Date().toLocaleString()}
+              </p>
+            </div>
 
             </div>
           </div>

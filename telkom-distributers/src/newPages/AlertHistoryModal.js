@@ -1,65 +1,61 @@
-import { useState ,useRef} from "react";
+import { useState, useRef, useEffect } from "react";
+import { ShieldCheck, X, AlertTriangle, Eye } from "lucide-react";
 import jsPDF from "jspdf";
 
-// Simple Face Verification Component
+// --- Simple Face Verification ---
 function SimpleFaceVerify({ onVerify, onCancel }) {
   const videoRef = useRef();
   const [error, setError] = useState("");
 
-  const startCamera = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-      videoRef.current.srcObject = stream;
-    } catch (err) {
-      setError("Cannot access camera. Please allow camera access.");
-    }
-  };
-
-  const stopCamera = () => {
-    if (videoRef.current && videoRef.current.srcObject) {
-      videoRef.current.srcObject.getTracks().forEach((track) => track.stop());
-    }
-  };
+  useEffect(() => {
+    const startCamera = async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        videoRef.current.srcObject = stream;
+      } catch {
+        setError("Cannot access camera. Please allow camera access.");
+      }
+    };
+    startCamera();
+    return () => {
+      if (videoRef.current?.srcObject)
+        videoRef.current.srcObject.getTracks().forEach((track) => track.stop());
+    };
+  }, []);
 
   const handleVerify = () => {
     const video = videoRef.current;
     if (video && video.readyState === 4) {
-      stopCamera();
+      video.srcObject.getTracks().forEach((track) => track.stop());
       onVerify();
     } else {
-      setError("No face detected. Make sure your face is in the camera view.");
+      setError("No face detected. Make sure your face is in view.");
     }
   };
 
-  // Start camera automatically
-  if (videoRef.current && !videoRef.current.srcObject) startCamera();
-
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white w-full max-w-md p-5 rounded-2xl shadow-lg">
-        <h3 className="text-lg font-bold mb-3">Face Verification</h3>
+    <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4">
+      <div className="bg-white w-full max-w-md p-6 rounded-2xl shadow-lg flex flex-col gap-4">
+        <h3 className="text-xl font-bold text-center">Face Verification</h3>
         <video
           ref={videoRef}
           autoPlay
           muted
-          className="w-full h-60 bg-gray-200 rounded mb-3"
+          className="w-full h-60 bg-gray-100 rounded"
         />
-        {error && <p className="text-red-500 text-sm mb-2">{error}</p>}
-        <div className="flex justify-end gap-2">
+        {error && <p className="text-red-500 text-sm">{error}</p>}
+        <div className="flex justify-end gap-3">
           <button
-            className="bg-gray-400 text-white px-3 py-1 rounded hover:bg-gray-500"
-            onClick={() => {
-              stopCamera();
-              onCancel();
-            }}
+            className="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300 transition"
+            onClick={onCancel}
           >
             Cancel
           </button>
           <button
-            className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition flex items-center gap-1"
             onClick={handleVerify}
           >
-            Verify Face
+            <ShieldCheck className="w-4 h-4" /> Verify
           </button>
         </div>
       </div>
@@ -67,7 +63,7 @@ function SimpleFaceVerify({ onVerify, onCancel }) {
   );
 }
 
-// Main AlertHistoryModal Component
+// --- Main Modal ---
 export default function AlertHistoryModal({ isOpen, onClose, alerts, currentUser }) {
   const [searchSim, setSearchSim] = useState("");
   const [filterDate, setFilterDate] = useState("");
@@ -75,50 +71,43 @@ export default function AlertHistoryModal({ isOpen, onClose, alerts, currentUser
 
   if (!isOpen) return null;
 
-  // --- Filter alerts ---
-  const filteredAlerts = alerts.filter((alert) => {
-    const matchesSim = alert.simNumber.includes(searchSim);
+  const filteredAlerts = alerts.filter((a) => {
+    const matchesSim = a.simNumber.includes(searchSim);
     const matchesDate = filterDate
-      ? new Date(alert.timestamp?.toDate().toDateString()) ===
+      ? new Date(a.timestamp?.toDate().toDateString()) ===
         new Date(filterDate).toDateString()
       : true;
     return matchesSim && matchesDate;
   });
 
-  // --- User Actions ---
-  const handleAuthorizeClick = (alert) => setFaceAlert(alert);
-
-  const handleNotAuthorizeClick = (alert) => {
+  const handleAuthorize = (alert) => setFaceAlert(alert);
+  const handleDeny = (alert) => {
     alert.status = "Not Authorized";
-    alert.authorizedBy = currentUser;
+    alert.authorizedBy = currentUser?.fullName || "Admin";
     alert.authorizationTime = new Date();
   };
 
-  const getStatusColor = (status) => {
+  const getStatusClass = (status) => {
     if (status === "Authorized") return "bg-green-100 text-green-700 border-green-400";
     if (status === "Not Authorized") return "bg-red-100 text-red-700 border-red-400";
     return "bg-yellow-100 text-yellow-700 border-yellow-400"; // pending
   };
 
-  // --- Export Functions ---
   const exportToCSV = () => {
     const csvContent =
       "data:text/csv;charset=utf-8," +
-      ["SIM,Time,Affected Banks,Notified,Status,Authorized By,Authorization Time"]
+      ["SIM,Time,Status,Authorized By,Authorization Time"]
         .concat(
           filteredAlerts.map(
             (a) =>
-              `${a.simNumber},${a.timestamp?.toDate().toLocaleString()},${a.affectedBanks.join(
-                "|"
-              )},${a.notifiedNextOfKin.join("|")},${a.status || "Pending"},${a.authorizedBy || "-"},${
-                a.authorizationTime ? new Date(a.authorizationTime).toLocaleString() : "-"
-              }`
+              `${a.simNumber},${a.timestamp?.toDate().toLocaleString()},${a.status || "Pending"},${
+                a.authorizedBy || "-"
+              },${a.authorizationTime ? new Date(a.authorizationTime).toLocaleString() : "-"}`
           )
         )
         .join("\n");
-    const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
+    link.setAttribute("href", encodeURI(csvContent));
     link.setAttribute("download", "alerts.csv");
     document.body.appendChild(link);
     link.click();
@@ -129,11 +118,11 @@ export default function AlertHistoryModal({ isOpen, onClose, alerts, currentUser
     const doc = new jsPDF();
     filteredAlerts.forEach((a, i) => {
       doc.text(
-        `SIM: ${a.simNumber} | Time: ${a.timestamp?.toDate().toLocaleString()} | Banks: ${a.affectedBanks.join(
-          ", "
-        )} | Notified: ${a.notifiedNextOfKin.join(", ")} | Status: ${a.status || "Pending"} | Authorized By: ${
-          a.authorizedBy || "-"
-        } | Authorization Time: ${a.authorizationTime ? new Date(a.authorizationTime).toLocaleString() : "-"}`,
+        `SIM: ${a.simNumber} | Time: ${a.timestamp?.toDate().toLocaleString()} | Status: ${
+          a.status || "Pending"
+        } | Authorized By: ${a.authorizedBy || "-"} | Authorization: ${
+          a.authorizationTime ? new Date(a.authorizationTime).toLocaleString() : "-"
+        }`,
         10,
         10 + i * 10
       );
@@ -142,116 +131,108 @@ export default function AlertHistoryModal({ isOpen, onClose, alerts, currentUser
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white w-full max-w-lg p-5 rounded-2xl shadow-lg overflow-y-auto max-h-[90vh]">
+    <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4">
+      <div className="bg-white w-full max-w-3xl p-6 rounded-2xl shadow-lg overflow-y-auto max-h-[90vh] flex flex-col gap-4">
         {/* Header */}
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-bold">Alert History</h2>
-          <button className="text-gray-600 hover:text-gray-800" onClick={onClose}>
+        <div className="flex justify-between items-center border-b pb-3">
+          <h2 className="text-xl font-bold flex items-center gap-2">
+            <AlertTriangle className="w-5 h-5 text-red-500" /> Alert History
+          </h2>
+          <button
+            className="text-gray-500 hover:text-gray-800 font-medium"
+            onClick={onClose}
+          >
             Close
           </button>
         </div>
 
         {/* Filters */}
-        <div className="flex flex-col sm:flex-row gap-2 mb-4">
+        <div className="flex flex-col sm:flex-row gap-2">
           <input
             type="text"
             placeholder="Search SIM"
-            className="border rounded px-3 py-1 w-full sm:w-1/2"
+            className="border rounded px-3 py-2 w-full sm:w-1/2"
             value={searchSim}
             onChange={(e) => setSearchSim(e.target.value)}
           />
           <input
             type="date"
-            className="border rounded px-3 py-1 w-full sm:w-1/2"
+            className="border rounded px-3 py-2 w-full sm:w-1/2"
             value={filterDate}
             onChange={(e) => setFilterDate(e.target.value)}
           />
         </div>
 
         {/* Export Buttons */}
-        <div className="flex gap-2 mb-3 flex-wrap">
+        <div className="flex gap-2 flex-wrap">
           <button
-            className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
+            className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 flex items-center gap-1"
             onClick={exportToCSV}
           >
-            Export CSV
+            <Eye className="w-4 h-4" /> Export CSV
           </button>
           <button
-            className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600"
+            className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600 flex items-center gap-1"
             onClick={exportToPDF}
           >
-            Export PDF
+            <Eye className="w-4 h-4" /> Export PDF
           </button>
         </div>
 
-        {/* Alerts */}
+        {/* Alerts List */}
         {filteredAlerts.length === 0 ? (
-          <p className="text-sm text-gray-500">No alerts found.</p>
+          <p className="text-sm text-gray-500 text-center mt-4">No alerts found.</p>
         ) : (
-          <ul className="space-y-3">
+          <ul className="space-y-3 mt-2">
             {filteredAlerts.map((alert, idx) => (
               <li
                 key={idx}
-                className="border-l-4 border-blue-500 pl-3 p-3 rounded-md bg-gray-50 hover:bg-gray-100 transition"
+                className="border border-gray-200 p-4 rounded-lg flex flex-col md:flex-row md:justify-between gap-2 items-start hover:shadow-sm transition bg-white"
               >
-                <p className="text-sm font-semibold">SIM: {alert.simNumber}</p>
-                <p className="text-sm">
-                  Time: {alert.timestamp?.toDate().toLocaleString()}
-                </p>
-                <p className="text-sm">
-                  Affected Banks: {alert.affectedBanks.join(", ") || "-"}
-                </p>
-                <p className="text-sm">
-                  Notified: {alert.notifiedNextOfKin.join(", ") || "-"}
-                </p>
-
-                <p
-                  className={`inline-block mt-1 px-2 py-1 text-xs font-semibold rounded border ${getStatusColor(
-                    alert.status
-                  )}`}
-                >
-                  {alert.status || "Pending"}
-                </p>
-
-                {alert.status && (
-                  <p className="text-xs mt-1 text-gray-600">
-                    Authorized By: {alert.authorizedBy || "-"} <br />
-                    Authorization Time:{" "}
-                    {alert.authorizationTime
-                      ? new Date(alert.authorizationTime).toLocaleString()
-                      : "-"}
+                <div className="space-y-1">
+                  <p className="text-sm font-semibold">SIM: {alert.simNumber}</p>
+                  <p className="text-sm text-gray-600">
+                    Time: {alert.timestamp?.toDate().toLocaleString()}
                   </p>
-                )}
+                </div>
 
-                {/* Action Buttons */}
-                <div className="mt-2 flex gap-2">
-                  <button
-                    className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600"
-                    onClick={() => handleAuthorizeClick(alert)}
-                    disabled={alert.status === "Authorized"}
+                <div className="flex gap-2 items-center">
+                  <span
+                    className={`inline-block px-2 py-1 text-xs font-semibold rounded border ${getStatusClass(
+                      alert.status
+                    )}`}
                   >
-                    Authorize
-                  </button>
-                  <button
-                    className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
-                    onClick={() => handleNotAuthorizeClick(alert)}
-                    disabled={alert.status === "Not Authorized"}
-                  >
-                    Not Authorize
-                  </button>
+                    {alert.status || "Pending"}
+                  </span>
+
+                  {alert.status === "pending" && (
+                    <>
+                      <button
+                        className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 flex items-center gap-1"
+                        onClick={() => handleDeny(alert)}
+                      >
+                        <X className="w-4 h-4" /> Deny
+                      </button>
+                      <button
+                        className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600 flex items-center gap-1"
+                        onClick={() => handleAuthorize(alert)}
+                      >
+                        <ShieldCheck className="w-4 h-4" /> Authorize
+                      </button>
+                    </>
+                  )}
                 </div>
               </li>
             ))}
           </ul>
         )}
 
-        {/* Face Verification Modal */}
+        {/* Face Verification */}
         {faceAlert && (
           <SimpleFaceVerify
             onVerify={() => {
               faceAlert.status = "Authorized";
-              faceAlert.authorizedBy = currentUser;
+              faceAlert.authorizedBy = currentUser?.fullName || "Admin";
               faceAlert.authorizationTime = new Date();
               setFaceAlert(null);
               alert("✅ Authorization successful");
