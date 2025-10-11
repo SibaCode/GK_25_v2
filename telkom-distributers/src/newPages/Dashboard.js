@@ -6,7 +6,7 @@ import { auth, db } from "../firebase";
 import { signOut } from "firebase/auth";
 import { doc, getDoc, onSnapshot , updateDoc} from "firebase/firestore";
 import { useTranslation } from "react-i18next";
-
+import AlertHistoryModal from "./AlertHistoryModal";
 import DashboardTabs from "./DashboardTabs";
 import RegisterSimProtectionModal from "./RegisterSimProtectionModal";
 import ViewSimProtectionModal from "./ViewSimProtectionModal";
@@ -161,6 +161,7 @@ export default function Dashboard() {
                   <p className="text-sm">{t("activeAlerts")}</p>
                   <p className="text-3xl font-bold mt-1">{alerts.length}</p>
                 </div>
+              
                 <button
                   onClick={() => setIsAlertModalOpen(true)}
                   className="mt-3 bg-white text-red-600 px-3 py-1 rounded-lg hover:bg-gray-100 transition text-sm font-medium shadow flex items-center justify-center gap-1 relative"
@@ -235,42 +236,13 @@ export default function Dashboard() {
       )}
 
       {/* Alerts Modal */}
-      {isAlertModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white w-full max-w-3xl p-6 rounded-3xl shadow-lg overflow-y-auto max-h-[80vh] scroll-smooth">
-            <div className="flex justify-between items-center mb-5">
-              <h2 className="text-xl font-bold">{t("activeAlerts")}</h2>
-              <button
-                className="text-gray-600 hover:text-gray-800 font-medium"
-                onClick={() => setIsAlertModalOpen(false)}
-              >
-                {t("close") || "Close"}
-              </button>
-            </div>
-            {alerts.length === 0 && <p className="text-sm text-gray-500">{t("noAlerts") || "No alerts yet."}</p>}
-            <ul className="space-y-3">
-              {alerts.map((alert, idx) => (
-                <li
-                  key={idx}
-                  className={`border-l-4 pl-4 p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition shadow-sm ${
-                    alert.status === "high"
-                      ? "border-red-500"
-                      : alert.status === "medium"
-                      ? "border-yellow-400"
-                      : "border-green-400"
-                  } ${alert.isNew ? "bg-yellow-50 animate-pulse" : ""}`}
-                >
-                  <p className="text-sm font-semibold">SIM: {alert.simNumber}</p>
-                  <p className="text-sm">Time: {alert.timestamp?.toDate().toLocaleString()}</p>
-                  <p className="text-sm">Affected Banks: {alert.affectedBanks.join(", ") || "-"}</p>
-                  <p className="text-sm">Notified: {alert.notifiedNextOfKin.join(", ") || "-"}</p>
-                  <p className="text-sm font-medium">Status: {alert.status}</p>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      )}
+      <AlertHistoryModal
+  isOpen={isAlertModalOpen}
+  onClose={() => setIsAlertModalOpen(false)}
+  alerts={alerts}
+/>
+
+   
     </div>
   );
 }
