@@ -6,6 +6,7 @@ import RegisterSimProtectionModal from "./RegisterSimProtectionModal";
 import { auth, db } from "../firebase";
 import { signOut } from "firebase/auth";
 import { doc, getDoc, onSnapshot } from "firebase/firestore";
+      import { useTranslation } from "react-i18next";
 
 export default function Dashboard() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -14,6 +15,7 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState("About");
   const [isAlertModalOpen, setIsAlertModalOpen] = useState(false);
 
+const { t, i18n } = useTranslation();
   // Listen for auth changes and fetch user data
   useEffect(() => {
     const unsubscribeAuth = auth.onAuthStateChanged((user) => {
@@ -66,6 +68,10 @@ export default function Dashboard() {
             </div>
           </div>
           <div>
+      
+
+<h3 className="font-semibold text-gray-700 mb-2">{t("nextOfKin")}</h3>
+
             <h3 className="font-semibold text-gray-700 mb-2">Next of Kin</h3>
             {currentUser.simProtection?.nextOfKin?.length
               ? currentUser.simProtection.nextOfKin.map((kin, idx) => (
@@ -75,7 +81,16 @@ export default function Dashboard() {
                 ))
               : <p className="text-sm text-gray-500">No next of kin added</p>}
           </div>
-
+<select
+  onChange={(e) => i18n.changeLanguage(e.target.value)}
+  className="border p-2 rounded w-full mt-4"
+>
+  <option value="en">English</option>
+  <option value="af">Afrikaans</option>
+  <option value="zu">Zulu</option>
+  <option value="xh">Xhosa</option>
+  <option value="st">Sotho</option>
+</select>
           <button
             onClick={handleLogout}
             className="mt-4 flex items-center gap-2 bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition"

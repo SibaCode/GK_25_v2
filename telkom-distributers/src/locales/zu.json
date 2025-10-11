@@ -1,0 +1,20 @@
+{
+  "dashboard": {
+    "totalSims": "Inani le-SIM",
+    "activeAlerts": "Izexwayiso Ezisebenzayo",
+    "lastUpdated": "Isibuyekezo Sokugcina",
+    "registerSim": "Bhalisa / Phatha i-SIM",
+    "viewAlerts": "Buka Izexwayiso",
+    "securityReminders": "Izikhumbuzo Zokuphepha",
+    "neverShareOtp": "Ungalokothi wabelane nge-OTP noma i-PIN yakho.",
+    "checkAccounts": "Hlola ama-akhawunti akho ahlanganisiwe njalo.",
+    "updateRecovery": "Buyekeza inombolo yakho yokululama."
+  },
+  "simActivity": {
+    "triggerSim": "Qalisa Umsebenzi we-SIM",
+    "selectSim": "Khetha i-SIM ukuze uvuselele isexwayiso:",
+    "triggerAlert": "Vuselela Isixwayiso",
+    "alertTimeline": "Isikhathi Sezexwayiso",
+    "noAlerts": "Azikho izexwayiso okwamanje."
+  }
+}

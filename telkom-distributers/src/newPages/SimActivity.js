@@ -55,12 +55,17 @@ export default function SimActivity() {
     setTriggering(true);
     try {
       const docRef = doc(db, "users", auth.currentUser.uid);
+
+      // generate a simple Case Number
+      const caseNumber = `CASE-${Math.floor(1000 + Math.random() * 9000)}`;
+
       const newAlert = {
         simNumber: selectedSim,
         timestamp: Timestamp.now(),
         affectedBanks: currentUser.simProtection?.bankAccounts?.map((b) => b.bankName) || [],
         notifiedNextOfKin: currentUser.simProtection?.nextOfKin?.map((n) => n.name) || [],
         status: "pending",
+        caseNumber: caseNumber,
       };
 
       // Save alert in Firestore
@@ -79,6 +84,7 @@ export default function SimActivity() {
           status: newAlert.status,
           time: newAlert.timestamp.toDate().toLocaleString(),
           to_email: currentUser.email,
+          case_number: newAlert.caseNumber,
         },
         "3U2Dnx4hFe8-eLaQk"         // Replace with your EmailJS public key
       );
@@ -167,8 +173,12 @@ export default function SimActivity() {
             <h2 className="text-lg font-bold mb-2">Alert Timeline</h2>
             {alerts.length === 0 && <p className="text-sm text-gray-500">No alerts yet.</p>}
             <ul className="space-y-3">
-              {alerts.map((alert, idx) => (
-                <li key={idx} className="border-l-2 border-blue-500 pl-3 p-2 rounded-md hover:bg-gray-50 transition">
+              {alerts
+                .slice()
+                .reverse()
+                .map((alert, idx) => (
+                <li key={idx} className="border-l-2 border-blue-500 pl-3 p-3 rounded-md hover:bg-gray-50 transition">
+                  <p className="text-sm font-semibold">Case: {alert.caseNumber}</p>
                   <p className="text-sm font-semibold">SIM: {alert.simNumber}</p>
                   <p className="text-sm">Time: {alert.timestamp?.toDate().toLocaleString()}</p>
                   <p className="text-sm">Affected Banks: {alert.affectedBanks.join(", ") || "-"}</p>

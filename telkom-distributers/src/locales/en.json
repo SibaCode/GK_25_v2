@@ -1,0 +1,20 @@
+{
+  "dashboard": {
+    "totalSims": "Total SIMs",
+    "activeAlerts": "Active Alerts",
+    "lastUpdated": "Last Updated",
+    "registerSim": "Register / Manage SIM",
+    "viewAlerts": "View Alerts",
+    "securityReminders": "Security Reminders",
+    "neverShareOtp": "Never share your OTP or PIN.",
+    "checkAccounts": "Check your linked accounts regularly.",
+    "updateRecovery": "Update your recovery number."
+  },
+  "simActivity": {
+    "triggerSim": "Trigger SIM Activity",
+    "selectSim": "Select a SIM to trigger an alert:",
+    "triggerAlert": "Trigger Alert",
+    "alertTimeline": "Alert Timeline",
+    "noAlerts": "No alerts yet."
+  }
+}
