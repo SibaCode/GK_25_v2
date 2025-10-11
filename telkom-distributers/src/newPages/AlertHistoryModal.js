@@ -1,17 +1,81 @@
-import { useState } from "react";
+import { useState ,useRef} from "react";
 import jsPDF from "jspdf";
 
-export default function AlertHistoryModal({ isOpen, onClose, alerts }) {
+// Simple Face Verification Component
+function SimpleFaceVerify({ onVerify, onCancel }) {
+  const videoRef = useRef();
+  const [error, setError] = useState("");
+
+  const startCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      videoRef.current.srcObject = stream;
+    } catch (err) {
+      setError("Cannot access camera. Please allow camera access.");
+    }
+  };
+
+  const stopCamera = () => {
+    if (videoRef.current && videoRef.current.srcObject) {
+      videoRef.current.srcObject.getTracks().forEach((track) => track.stop());
+    }
+  };
+
+  const handleVerify = () => {
+    const video = videoRef.current;
+    if (video && video.readyState === 4) {
+      stopCamera();
+      onVerify();
+    } else {
+      setError("No face detected. Make sure your face is in the camera view.");
+    }
+  };
+
+  // Start camera automatically
+  if (videoRef.current && !videoRef.current.srcObject) startCamera();
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white w-full max-w-md p-5 rounded-2xl shadow-lg">
+        <h3 className="text-lg font-bold mb-3">Face Verification</h3>
+        <video
+          ref={videoRef}
+          autoPlay
+          muted
+          className="w-full h-60 bg-gray-200 rounded mb-3"
+        />
+        {error && <p className="text-red-500 text-sm mb-2">{error}</p>}
+        <div className="flex justify-end gap-2">
+          <button
+            className="bg-gray-400 text-white px-3 py-1 rounded hover:bg-gray-500"
+            onClick={() => {
+              stopCamera();
+              onCancel();
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
+            onClick={handleVerify}
+          >
+            Verify Face
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Main AlertHistoryModal Component
+export default function AlertHistoryModal({ isOpen, onClose, alerts, currentUser }) {
   const [searchSim, setSearchSim] = useState("");
   const [filterDate, setFilterDate] = useState("");
-  const [twoFAAlert, setTwoFAAlert] = useState(null);
-  const [twoFACode, setTwoFACode] = useState("");
-  const [generatedCode, setGeneratedCode] = useState("");
-  const [twoFAImage, setTwoFAImage] = useState("");
+  const [faceAlert, setFaceAlert] = useState(null);
 
   if (!isOpen) return null;
 
-  // Filter alerts
+  // --- Filter alerts ---
   const filteredAlerts = alerts.filter((alert) => {
     const matchesSim = alert.simNumber.includes(searchSim);
     const matchesDate = filterDate
@@ -21,44 +85,34 @@ export default function AlertHistoryModal({ isOpen, onClose, alerts }) {
     return matchesSim && matchesDate;
   });
 
-  // 2FA logic
-  const handleAuthorizeClick = (alert) => {
-    const randomCode = Math.floor(1000 + Math.random() * 9000).toString();
-    const images = ["/2fa1.png", "/2fa2.png", "/2fa3.png"]; // Add these to /public
-    const randomImage = images[Math.floor(Math.random() * images.length)];
-
-    setGeneratedCode(randomCode);
-    setTwoFAImage(randomImage);
-    setTwoFAAlert(alert);
-  };
+  // --- User Actions ---
+  const handleAuthorizeClick = (alert) => setFaceAlert(alert);
 
   const handleNotAuthorizeClick = (alert) => {
     alert.status = "Not Authorized";
+    alert.authorizedBy = currentUser;
+    alert.authorizationTime = new Date();
   };
 
-  const handle2FASubmit = () => {
-    if (twoFACode === generatedCode) {
-      twoFAAlert.status = "Authorized";
-      setTwoFAAlert(null);
-      setTwoFACode("");
-      setGeneratedCode("");
-      alert("✅ Authorization successful");
-    } else {
-      alert("❌ Incorrect 2FA code. Please try again.");
-    }
+  const getStatusColor = (status) => {
+    if (status === "Authorized") return "bg-green-100 text-green-700 border-green-400";
+    if (status === "Not Authorized") return "bg-red-100 text-red-700 border-red-400";
+    return "bg-yellow-100 text-yellow-700 border-yellow-400"; // pending
   };
 
-  // Export functions
+  // --- Export Functions ---
   const exportToCSV = () => {
     const csvContent =
       "data:text/csv;charset=utf-8," +
-      ["SIM,Time,Affected Banks,Notified,Status"]
+      ["SIM,Time,Affected Banks,Notified,Status,Authorized By,Authorization Time"]
         .concat(
           filteredAlerts.map(
             (a) =>
               `${a.simNumber},${a.timestamp?.toDate().toLocaleString()},${a.affectedBanks.join(
                 "|"
-              )},${a.notifiedNextOfKin.join("|")},${a.status}`
+              )},${a.notifiedNextOfKin.join("|")},${a.status || "Pending"},${a.authorizedBy || "-"},${
+                a.authorizationTime ? new Date(a.authorizationTime).toLocaleString() : "-"
+              }`
           )
         )
         .join("\n");
@@ -77,7 +131,9 @@ export default function AlertHistoryModal({ isOpen, onClose, alerts }) {
       doc.text(
         `SIM: ${a.simNumber} | Time: ${a.timestamp?.toDate().toLocaleString()} | Banks: ${a.affectedBanks.join(
           ", "
-        )} | Notified: ${a.notifiedNextOfKin.join(", ")} | Status: ${a.status}`,
+        )} | Notified: ${a.notifiedNextOfKin.join(", ")} | Status: ${a.status || "Pending"} | Authorized By: ${
+          a.authorizedBy || "-"
+        } | Authorization Time: ${a.authorizationTime ? new Date(a.authorizationTime).toLocaleString() : "-"}`,
         10,
         10 + i * 10
       );
@@ -85,16 +141,10 @@ export default function AlertHistoryModal({ isOpen, onClose, alerts }) {
     doc.save("alerts.pdf");
   };
 
-  // Helper: Colored badge for status
-  const getStatusColor = (status) => {
-    if (status === "Authorized") return "bg-green-100 text-green-700 border-green-400";
-    if (status === "Not Authorized") return "bg-red-100 text-red-700 border-red-400";
-    return "bg-yellow-100 text-yellow-700 border-yellow-400"; // default for pending
-  };
-
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white w-full max-w-lg p-5 rounded-2xl shadow-lg overflow-y-auto max-h-[90vh]">
+        {/* Header */}
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-bold">Alert History</h2>
           <button className="text-gray-600 hover:text-gray-800" onClick={onClose}>
@@ -119,6 +169,7 @@ export default function AlertHistoryModal({ isOpen, onClose, alerts }) {
           />
         </div>
 
+        {/* Export Buttons */}
         <div className="flex gap-2 mb-3 flex-wrap">
           <button
             className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
@@ -155,7 +206,6 @@ export default function AlertHistoryModal({ isOpen, onClose, alerts }) {
                   Notified: {alert.notifiedNextOfKin.join(", ") || "-"}
                 </p>
 
-                {/* Colored Status Badge */}
                 <p
                   className={`inline-block mt-1 px-2 py-1 text-xs font-semibold rounded border ${getStatusColor(
                     alert.status
@@ -164,16 +214,29 @@ export default function AlertHistoryModal({ isOpen, onClose, alerts }) {
                   {alert.status || "Pending"}
                 </p>
 
+                {alert.status && (
+                  <p className="text-xs mt-1 text-gray-600">
+                    Authorized By: {alert.authorizedBy || "-"} <br />
+                    Authorization Time:{" "}
+                    {alert.authorizationTime
+                      ? new Date(alert.authorizationTime).toLocaleString()
+                      : "-"}
+                  </p>
+                )}
+
+                {/* Action Buttons */}
                 <div className="mt-2 flex gap-2">
                   <button
                     className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600"
                     onClick={() => handleAuthorizeClick(alert)}
+                    disabled={alert.status === "Authorized"}
                   >
                     Authorize
                   </button>
                   <button
                     className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
                     onClick={() => handleNotAuthorizeClick(alert)}
+                    disabled={alert.status === "Not Authorized"}
                   >
                     Not Authorize
                   </button>
@@ -183,49 +246,18 @@ export default function AlertHistoryModal({ isOpen, onClose, alerts }) {
           </ul>
         )}
 
-        {/* 2FA Modal */}
-        {twoFAAlert && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4">
-            <div className="bg-white w-full max-w-sm p-5 rounded-2xl shadow-lg">
-              <h3 className="text-lg font-bold mb-3">2FA Verification</h3>
-              <p className="mb-2">
-                To authorize SIM:{" "}
-                <span className="font-semibold">{twoFAAlert.simNumber}</span>
-              </p>
-              <img
-                src={twoFAImage}
-                alt="2FA"
-                className="mb-3 w-full h-40 object-contain border rounded"
-              />
-              <p className="text-sm mb-2 text-gray-600">
-                Enter this 4-digit code:{" "}
-                <span className="font-mono text-lg text-blue-600">
-                  {generatedCode}
-                </span>
-              </p>
-              <input
-                type="text"
-                placeholder="Enter 2FA code"
-                className="border rounded px-3 py-1 w-full mb-3"
-                value={twoFACode}
-                onChange={(e) => setTwoFACode(e.target.value)}
-              />
-              <div className="flex justify-end gap-2">
-                <button
-                  className="bg-gray-400 text-white px-3 py-1 rounded hover:bg-gray-500"
-                  onClick={() => setTwoFAAlert(null)}
-                >
-                  Cancel
-                </button>
-                <button
-                  className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
-                  onClick={handle2FASubmit}
-                >
-                  Verify
-                </button>
-              </div>
-            </div>
-          </div>
+        {/* Face Verification Modal */}
+        {faceAlert && (
+          <SimpleFaceVerify
+            onVerify={() => {
+              faceAlert.status = "Authorized";
+              faceAlert.authorizedBy = currentUser;
+              faceAlert.authorizationTime = new Date();
+              setFaceAlert(null);
+              alert("✅ Authorization successful");
+            }}
+            onCancel={() => setFaceAlert(null)}
+          />
         )}
       </div>
     </div>
