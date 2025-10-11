@@ -51,7 +51,7 @@ export default function AlertsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
-      <h1 className="text-2xl font-bold text-gray-800 mb-6">Active Alerts</h1>
+      <h1 className="text-2xl font-bold text-gray-800 mb-6">ssActive Alerts</h1>
 
       {/* Search */}
       <input

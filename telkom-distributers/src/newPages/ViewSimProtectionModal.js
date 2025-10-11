@@ -44,12 +44,12 @@ export default function ViewSimProtectionModal({ data, onClose, onEdit }) {
                 <p className="text-sm"><span className="font-medium">Auto-lock SIM:</span> {sim.autoLock ? "Yes" : "No"}</p>
 
                 {/* Edit button per SIM */}
-                <button
+                {/* <button
                   onClick={() => onEdit(sim)}
                   className="absolute top-4 right-4 bg-black text-white px-3 py-1 rounded-lg hover:bg-gray-800 text-xs font-medium transition"
                 >
                   Edit
-                </button>
+                </button> */}
               </div>
             ))}
           </div>
