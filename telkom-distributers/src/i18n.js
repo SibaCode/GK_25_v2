@@ -68,8 +68,107 @@ const resources = {
       updateRecovery: "Werk jou herstelnommer op."
     }
   },
-  // Add Zulu, Xhosa, Sotho here (zu, xh, st)
+  zu: {
+    translation: {
+      loadingUser: "Kulayisha idatha yomsebenzisi...",
+      noUser: "Akekho umsebenzisi ongene ngemvume",
+      nextOfKin: "Osondelene nabo",
+      noNextOfKin: "Akukho osendelene nabo abafakiwe",
+      logout: "Phuma",
+      yourDataSummary: "Isifinyezo Sedatha Yakho",
+      totalSims: "I-SIMs Eziphelele",
+      registerSim: "Bhalisa / Phatha i-SIM",
+      activeAlerts: "Izexwayiso Ezisebenzayo",
+      viewAlerts: "Buka Izexwayiso",
+      lastUpdated: "Kuvuselelwe Okokugcina",
+      about: "Mayelana",
+      legal: "Ezomthetho",
+      accessibility: "Ukufinyeleleka",
+      aboutUs: "Mayelana Nathi",
+      aboutText: "Sinikeza izinsizakalo zokuvikela i-SIM ukuze uqinisekise umugqa wakho weselula namakhonto axhunyiwe. Hlala uphephile futhi ulawule.",
+      legalList: [
+        "Ukuhambisana nomthetho wokuvikela idatha (POPIA)",
+        "Izimiso ze-FSCA zamabhange nabahlinzeki bezinsurances",
+        "Imithetho ye-Telecommunications (ICASA) yokubhaliswa kwe-SIM",
+        "Izinyathelo zokuphepha kwe-cyber ukugwema ukuvuza",
+        "Ukuhambisana noMthetho Wokuvikela Abathengi"
+      ],
+      accessibilityText: "Iyatholakala kuzo zonke izisetshenziswa nezifundi zesikrini.",
+      contactSupport: "Xhumana Noxhaso",
+      securityReminders: "Izikhumbuzo Zokuphepha",
+      neverShareOtp: "Ungalokothi wabelane nge-OTP noma i-PIN yakho.",
+      checkAccounts: "Hlola ama-akhawunti axhunyiwe njalo.",
+      updateRecovery: "Vuselela inombolo yakho yokubuyisela."
+    }
+  },
+  xh: {
+    translation: {
+      loadingUser: "Ukulayisha idatha yomsebenzisi...",
+      noUser: "Akukho msebenzisi ungene",
+      nextOfKin: "Abaseduze",
+      noNextOfKin: "Akukho abaseduze bongezwa",
+      logout: "Phuma",
+      yourDataSummary: "Isishwankathelo seDatha Yakho",
+      totalSims: "I-SIMs Ezipheleleyo",
+      registerSim: "Bhalisa / Lawula i-SIM",
+      activeAlerts: "Izilumkiso Eziphambili",
+      viewAlerts: "Jonga Izilumkiso",
+      lastUpdated: "Ihlaziywe Okokugqibela",
+      about: "Malunga",
+      legal: "Ezomthetho",
+      accessibility: "Ukufikeleleka",
+      aboutUs: "Malunga Nathi",
+      aboutText: "Sinikezela ngeenkonzo zokhuseleko lwe-SIM ukukhusela umgca wakho weselfowuni kunye neakhawunti ezinxulumeneyo. Hlala ukhuselekile kwaye ulawule.",
+      legalList: [
+        "Ukuthobela uMthetho woKhuselo lweeDatha (POPIA)",
+        "Imimiselo ye-FSCA yamabhanki kunye nabashishini bezemali",
+        "Imithetho ye-Telecommunications (ICASA) yokubhaliswa kwe-SIM",
+        "Amanyathelo okhuseleko lwe-cyber ukuvimbela ukuphulwa",
+        "Ukuthobela uMthetho woKhuseleko lwaBathengi"
+      ],
+      accessibilityText: "Ifikeleleka kuzo zonke izixhobo kunye neefundisi zesikrini.",
+      contactSupport: "Qhagamshelana nokuXhasa",
+      securityReminders: "Izikhumbuzo zoKhuseleko",
+      neverShareOtp: "Ungabelani nge-OTP okanye i-PIN yakho.",
+      checkAccounts: "Jonga ii-akhawunti zakho ezinxulumene rhoqo.",
+      updateRecovery: "Hlaziya inombolo yakho yokubuyisela."
+    }
+  },
+  st: {
+    translation: {
+      loadingUser: "Ho kenya data ya mosebedisi...",
+      noUser: "Ha ho mosebedisi ya kene",
+      nextOfKin: "Batho ba haufi",
+      noNextOfKin: "Ha ho batho ba haufi ba kenyelletsoeng",
+      logout: "Baka",
+      yourDataSummary: "Kakaretso ya Data ya Hao",
+      totalSims: "SIMs Kakaretso",
+      registerSim: "Ingola / Laola SIM",
+      activeAlerts: "Ditsebiso Tse Sebetsang",
+      viewAlerts: "Sheba Ditsebiso",
+      lastUpdated: "E ntlafaditswe ho qetela",
+      about: "Mabapi",
+      legal: "Molao",
+      accessibility: "Ho fihlelleha",
+      aboutUs: "Mabapi le Rona",
+      aboutText: "Re fana ka ditshebeletso tsa tshireletso ea SIM ho sireletsa mola wa hau wa mobile le diakhaonto tse amanang. Lula o bolokehile ebile o laola.",
+      legalList: [
+        "Ho latela Molao wa Tshireletso ya Data (POPIA)",
+        "Melawana ya FSCA bakeng sa dibanka le bahlahisi ba inshorense",
+        "Melao ya Telecom (ICASA) bakeng sa ngoliso ya SIM",
+        "Mekgwa ya tshireletso ya cyber ho thibela kgahlanong le data",
+        "Ho latela Molao wa Tshireletso ya Bareki"
+      ],
+      accessibilityText: "E fumaneha ho lisebelisoa tsohle le bafundi ba skrini.",
+      contactSupport: "Ikgokanye le Tshehetso",
+      securityReminders: "Khopolo-Tshireletso",
+      neverShareOtp: "O se ke wa arolelana OTP kapa PIN ya hao.",
+      checkAccounts: "Hlola diakhaonto tse amanang khafetsa.",
+      updateRecovery: "Ntlafatsa nomoro ya hao ya ho fumana hape."
+    }
+  }
 };
+
 
 i18n
   .use(initReactI18next)

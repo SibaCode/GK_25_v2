@@ -20,7 +20,7 @@ function App() {
         <Route path="/login" element={<Login />} />
 
         {/* Dashboard */}
-        <Route path="/" element={<Dashboard />} />
+        <Route path="/dashboard" element={<Dashboard />} />
 
         {/* Register SIM */}
         <Route path="/register-sim" element={<RegisterSimProtection />} />

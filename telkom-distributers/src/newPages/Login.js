@@ -3,6 +3,9 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import toast, { Toaster } from "react-hot-toast";
 import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "../firebase";
+import i18next from "i18next";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -19,7 +22,19 @@ export default function Login() {
     setLoading(true);
     const auth = getAuth();
     try {
-      await signInWithEmailAndPassword(auth, form.email, form.password);
+      // Sign in with Firebase Auth
+      const userCredential = await signInWithEmailAndPassword(auth, form.email, form.password);
+
+      // Fetch user data from Firestore
+      const userDoc = await getDoc(doc(db, "users", userCredential.user.uid));
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        const preferredLanguage = userData.preferredLanguage || "en";
+
+        // Set the app language
+        i18next.changeLanguage(preferredLanguage);
+      }
+
       toast.success("Logged in successfully!");
       navigate("/dashboard");
     } catch (error) {
@@ -36,9 +51,29 @@ export default function Login() {
       <div className="bg-white shadow-lg rounded-2xl p-6 w-full max-w-md">
         <h1 className="text-2xl font-bold text-blue-700 mb-4 text-center">Login</h1>
         <form className="space-y-4" onSubmit={handleSubmit}>
-          <input type="email" name="email" placeholder="Email" value={form.email} onChange={handleChange} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none" required />
-          <input type="password" name="password" placeholder="Password" value={form.password} onChange={handleChange} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none" required />
-          <button type="submit" className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition" disabled={loading}>
+          <input
+            type="email"
+            name="email"
+            placeholder="Email"
+            value={form.email}
+            onChange={handleChange}
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
+            required
+          />
+          <input
+            type="password"
+            name="password"
+            placeholder="Password"
+            value={form.password}
+            onChange={handleChange}
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
+            required
+          />
+          <button
+            type="submit"
+            className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition"
+            disabled={loading}
+          >
             {loading ? "Logging in..." : "Login"}
           </button>
         </form>
