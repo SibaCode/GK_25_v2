@@ -39,7 +39,7 @@ function App() {
         <Route path="/alerts" element={<AlertsPage />} />
 
         {/* Redirect unknown routes to home */}
-        <Route path="*" element={<Navigate to="/" />} />
+        {/* <Route path="*" element={<Navigate to="/" />} /> */}
       </Routes>
     </Router>
   );

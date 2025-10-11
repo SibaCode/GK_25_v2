@@ -146,23 +146,7 @@ export default function AlertHistoryModal({ isOpen, onClose, alerts, currentUser
           </button>
         </div>
 
-        {/* Filters */}
-        <div className="flex flex-col sm:flex-row gap-2">
-          <input
-            type="text"
-            placeholder="Search SIM"
-            className="border rounded px-3 py-2 w-full sm:w-1/2"
-            value={searchSim}
-            onChange={(e) => setSearchSim(e.target.value)}
-          />
-          <input
-            type="date"
-            className="border rounded px-3 py-2 w-full sm:w-1/2"
-            value={filterDate}
-            onChange={(e) => setFilterDate(e.target.value)}
-          />
-        </div>
-
+     
         {/* Export Buttons */}
         <div className="flex gap-2 flex-wrap">
           <button
