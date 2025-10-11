@@ -32,7 +32,8 @@ const resources = {
       securityReminders: "Security Reminders",
       neverShareOtp: "Never share your OTP or PIN.",
       checkAccounts: "Check your linked accounts regularly.",
-      updateRecovery: "Update your recovery number."
+      updateRecovery: "Update your recovery number.",
+      preferredLanguage: "Preferred Language",
     }
   },
   af: {
@@ -65,7 +66,9 @@ const resources = {
       securityReminders: "Sekuriteitsherinnerings",
       neverShareOtp: "Moet nooit jou OTP of PIN deel nie.",
       checkAccounts: "Kontroleer jou gekoppelde rekeninge gereeld.",
-      updateRecovery: "Werk jou herstelnommer op."
+      updateRecovery: "Werk jou herstelnommer op.",
+                preferredLanguage: "Voorkeurtaal"
+
     }
   },
   zu: {
@@ -98,8 +101,8 @@ const resources = {
       securityReminders: "Izikhumbuzo Zokuphepha",
       neverShareOtp: "Ungalokothi wabelane nge-OTP noma i-PIN yakho.",
       checkAccounts: "Hlola ama-akhawunti axhunyiwe njalo.",
-      updateRecovery: "Vuselela inombolo yakho yokubuyisela."
-    }
+      updateRecovery: "Vuselela inombolo yakho yokubuyisela.",
+      preferredLanguage: "Ulimi Oluthandayo"    }
   },
   xh: {
     translation: {
@@ -131,7 +134,8 @@ const resources = {
       securityReminders: "Izikhumbuzo zoKhuseleko",
       neverShareOtp: "Ungabelani nge-OTP okanye i-PIN yakho.",
       checkAccounts: "Jonga ii-akhawunti zakho ezinxulumene rhoqo.",
-      updateRecovery: "Hlaziya inombolo yakho yokubuyisela."
+      updateRecovery: "Hlaziya inombolo yakho yokubuyisela.",
+       preferredLanguage: "Ulimi Oluthandwayo"
     }
   },
   st: {
@@ -164,7 +168,8 @@ const resources = {
       securityReminders: "Khopolo-Tshireletso",
       neverShareOtp: "O se ke wa arolelana OTP kapa PIN ya hao.",
       checkAccounts: "Hlola diakhaonto tse amanang khafetsa.",
-      updateRecovery: "Ntlafatsa nomoro ya hao ya ho fumana hape."
+      updateRecovery: "Ntlafatsa nomoro ya hao ya ho fumana hape.",
+            preferredLanguage: "Puo e Khethiloeng"
     }
   }
 };
