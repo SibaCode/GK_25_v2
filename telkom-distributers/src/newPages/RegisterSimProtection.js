@@ -33,6 +33,8 @@ const translations = {
     saved: "SIM Protection saved successfully!",
     failed: "Failed to save SIM protection. Try again.",
     preferredLanguage: "Preferred Language",
+    consentMessage:
+      "I understand and consent to the collection and use of my data for SIM protection purposes.",
   },
   zu: {
     title: "Lungelo Lokuvikela i-SIM",
@@ -60,60 +62,56 @@ const translations = {
     saved: "Ukuvikela i-SIM kugcinwe ngempumelelo!",
     failed: "Ukuvikela i-SIM kwehlulekile. Zama futhi.",
     preferredLanguage: "Ulimi Oluthandwayo",
+    consentMessage:
+      "Ngiyakuqonda futhi ngiyavuma ukuthi idatha yami iqoqwe futhi isetshenziswe ngenhloso yokuvikela i-SIM yami.",
   },
   xh: {
-    title: "Usetyenziso Lokuqinisekisa i-SIM",
-    description: "Khusela i-SIM yakho ngokuvavanya ubuqu bakho kunye nokumisela izaziso.",
-    idNumber: "Inombolo ye-ID",
-    idNumberPlaceholder: "Faka inombolo yakho ye-ID eyi-13",
-    linkedNumber: "Inombolo Exhunyiwe",
-    linkedNumberDescription: "Khetha inombolo yefowuni ofuna ukuyikhusela:",
-    loadingSims: "Ukulayisha ii-SIM ezinxulunyaniswe...",
-    enterNumberManually: "Faka inombolo ngesandla",
-    sendEmailAlert: "Thumela Isaziso kwi-imeyile yam",
-    emailPlaceholder: "umsebenzisi@example.com",
-    sendKinAlert: "Thumela Isaziso Komnye Umntu Oseduze Nam",
-    fullName: "Igama Elipheleleyo",
-    phoneNumber: "Inombolo Yefowuni",
-    autoLock: "Vala i-SIM ngokuzenzekelayo ukuba kukho imisebenzi engaqhelekanga",
-    linkBank: "Nxibelelana neAkhawunti yam yaseBhanki",
-    bankName: "Igama leBhanki",
-    accountNumber: "Inombolo yeAkhawunti",
-    addAnotherKin: "Yongeza Omnye Umntu Oseduze",
-    addAnotherAccount: "Yongeza Enye iAkhawunti",
-    save: "Gcina Usetyenziso Lokuqinisekisa i-SIM",
-    saving: "Kugcinwa...",
-    fixErrors: "Nceda lungisa iimpazamo ngaphambi kokuthumela.",
-    saved: "Ukuvikela i-SIM kugcinwe ngempumelelo!",
-    failed: "Ukuvikela i-SIM kwehlulekile. Zama kwakhona.",
-    preferredLanguage: "Ulwimi Oluthandwayo",
+    title: "Uqwalaselo Lokhuseleko lweSIM",
+    description: "Khusela iSIM yakho ngokungqina isazisi sakho kwaye usete izilumkiso.",
+    consentMessage:
+      "Ndiyaqonda kwaye ndiyavuma ukuqokelelwa nokusetyenziswa kwedatha yam ngenjongo yokukhusela iSIM yam.",
   },
   af: {
-    title: "SIM-beskerming Instelling",
-    description: "Beveilig jou SIM deur jou identiteit te verifieer en pasgemaakte waarskuwings te stel.",
-    idNumber: "ID Nommer",
-    idNumberPlaceholder: "Voer jou 13-syfer Suid-Afrikaanse ID nommer in",
-    linkedNumber: "Gekoppelde Nommer",
-    linkedNumberDescription: "Kies die telefoonnommer wat jy wil beskerm:",
-    loadingSims: "Laai gekoppelde SIM-kaarte...",
-    enterNumberManually: "Voer nommer handmatig in",
-    sendEmailAlert: "Stuur waarskuwing na my e-pos",
-    emailPlaceholder: "gebruiker@example.com",
-    sendKinAlert: "Stuur waarskuwing na my familielid",
-    fullName: "Volledige Naam",
-    phoneNumber: "Telefoonnommer",
-    autoLock: "Outomatiese SIM-sluiting indien verdagte aktiwiteit",
-    linkBank: "Koppel my bankrekening",
-    bankName: "Bank Naam",
-    accountNumber: "Rekeningnommer",
-    addAnotherKin: "Voeg nog 'n familielid by",
-    addAnotherAccount: "Voeg nog 'n rekening by",
-    save: "Stoor SIM-beskerming instellings",
-    saving: "Stoor...",
-    fixErrors: "Los asseblief die foute op voordat jy indien.",
-    saved: "SIM-beskerming suksesvol gestoor!",
-    failed: "SIM-beskerming kon nie gestoor word nie. Probeer weer.",
-    preferredLanguage: "Voorkeurtaal",
+    title: "SIM-beskermingsopstelling",
+    description: "Beveilig jou SIM deur jou identiteit te verifieer en pasgemaakte waarskuwings op te stel.",
+    consentMessage:
+      "Ek verstaan en gee toestemming dat my data versamel en gebruik mag word vir SIM-beskermingsdoeleindes.",
+  },
+  st: {
+    title: "Tlhophiso ea Tšireletso ea SIM",
+    description: "Sireletsa SIM ea hau ka ho netefatsa boitsebahatso ba hau le ho seta litemoso.",
+    consentMessage:
+      "Ke utloisisa ebile ke fana ka tumello hore lintlha tsa ka li bokelloe le ho sebelisoa molemong oa tšireletso ea SIM.",
+  },
+  tn: {
+    title: "Boikatiso jwa Tshireletso ya SIM",
+    description: "Sireletsa SIM ya gago ka go netefatsa boitshupo jwa gago le go tlhomamisa dikitsiso.",
+    consentMessage:
+      "Ke tlhaloganya mme ke dumela gore dintlha tsa me di ka phuthiwa le go dirisiwa mo boikatisong jwa tshireletso ya SIM.",
+  },
+  nso: {
+    title: "Peakanyo ya Tšhireletšo ya SIM",
+    description: "Šireletša SIM ya gago ka go netefatša boitsebišo bja gago le go bea ditsebišo.",
+    consentMessage:
+      "Ke kwešiša ebile ke dumelela gore tshedimosetso ya ka e kgoboketšwe le go šomišwa bakeng sa tšhireletšo ya SIM.",
+  },
+  ve: {
+    title: "Mavhekanyele a Vhulanguli ha SIM",
+    description: "Vhulungisea SIM yanu nga u khwaṱhisedza mbuelo yanu na u dzudzanya mitalutshedzo.",
+    consentMessage:
+      "Ndi a pfesesa nahone ndi khou tendela uri vhuṱanzi hanga vhu kuvhangwe na u shumiswa kha tsireledzo ya SIM yanga.",
+  },
+  ts: {
+    title: "Ndzulamiso ya Vuhlayiseki bya SIM",
+    description: "Sirhelela SIM ya wena hi ku tiyisisa vutitivisi bya wena ni ku veka swilumelo.",
+    consentMessage:
+      "Ndza twisisa naswona ndza pfumela leswaku mpimo wa mina wa datha wu hlengeletiwa ni ku tirhisiwa eku sirheleni ka SIM ya mina.",
+  },
+  nr: {
+    title: "Uhlelo Lwekuvikela i-SIM",
+    description: "Vikela i-SIM yakho ngokuhlola ubuqiniso bakho bese usetha izaziso ezikhethekile.",
+    consentMessage:
+      "Ngiyakuqonda futhi ngiyavuma ukuthi imininingwane yami iqoqwe futhi isetshenziswe ngenhloso yokuvikela i-SIM yami.",
   },
 };
 
@@ -129,6 +127,7 @@ const RegisterSimProtection = ({ onClose }) => {
     autoLock: false,
     bankAccount: false,
     bankAccounts: [{ bankName: "", accountNumber: "" }],
+    consent: false,
   });
 
   const [errors, setErrors] = useState({});
@@ -292,15 +291,28 @@ const RegisterSimProtection = ({ onClose }) => {
 
         <form onSubmit={handleSubmit} className="space-y-5">
 
-          {/* Preferred Language */}
-          <div>
-            <label className="block text-gray-700 font-medium mb-1">{t.preferredLanguage}</label>
-            <select name="preferredLanguage" value={formData.preferredLanguage} onChange={handleChange} className="w-full border px-3 py-2 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
-              <option value="en">English</option>
-              <option value="zu">Zulu</option>
-              {/* add Xhosa and Afrikaans if desired */}
-            </select>
-          </div>
+       {/* Preferred Language */}
+        <div>
+          <label className="block text-gray-700 font-medium mb-1">{t.preferredLanguage}</label>
+          <select
+            name="preferredLanguage"
+            value={formData.preferredLanguage}
+            onChange={handleChange}
+            className="w-full border px-3 py-2 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+          >
+            <option value="en">English</option>
+            <option value="zu">isiZulu</option>
+            <option value="xh">isiXhosa</option>
+            <option value="af">Afrikaans</option>
+            <option value="st">Sesotho</option>
+            <option value="tn">Setswana</option>
+            <option value="nso">Sepedi</option>
+            <option value="ve">Tshivenda</option>
+            <option value="ts">Xitsonga</option>
+            <option value="nr">isiNdebele</option>
+          </select>
+        </div>
+
 
           {/* ID Number */}
           <div>
@@ -395,6 +407,21 @@ const RegisterSimProtection = ({ onClose }) => {
             </div>
           ))}
           {formData.bankAccount && <button type="button" onClick={addBankAccount} className="flex items-center gap-1 text-blue-600 font-medium"><Plus size={16} /> {t.addAnotherAccount}</button>}
+{/* Consent */}
+<div className="flex items-start gap-2">
+  <input
+    type="checkbox"
+    checked={formData.consent || false}
+    onChange={() => setFormData(prev => ({ ...prev, consent: !prev.consent }))}
+    className="w-5 h-5 mt-1 accent-blue-600"
+    required
+  />
+  <label className="text-gray-700 text-sm">
+    {formData.preferredLanguage === "zu"
+      ? "Ngiyakuqonda futhi ngiyavuma ukuthi idatha yami iqoqwe futhi isetshenziswe ngenhloso yokuvikela i-SIM yami."
+      : "I understand and consent to the collection and use of my data for SIM protection purposes."}
+  </label>
+</div>
 
           {/* Submit */}
           <button type="submit" disabled={loading} className="w-full bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition">

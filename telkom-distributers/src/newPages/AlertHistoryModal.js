@@ -1,14 +1,17 @@
-// src/components/AlertHistoryModal.jsx
 import { useState } from "react";
 import jsPDF from "jspdf";
 
 export default function AlertHistoryModal({ isOpen, onClose, alerts }) {
   const [searchSim, setSearchSim] = useState("");
   const [filterDate, setFilterDate] = useState("");
+  const [twoFAAlert, setTwoFAAlert] = useState(null);
+  const [twoFACode, setTwoFACode] = useState("");
+  const [generatedCode, setGeneratedCode] = useState("");
+  const [twoFAImage, setTwoFAImage] = useState("");
 
   if (!isOpen) return null;
 
-  // Filter alerts based on SIM and date
+  // Filter alerts
   const filteredAlerts = alerts.filter((alert) => {
     const matchesSim = alert.simNumber.includes(searchSim);
     const matchesDate = filterDate
@@ -18,7 +21,34 @@ export default function AlertHistoryModal({ isOpen, onClose, alerts }) {
     return matchesSim && matchesDate;
   });
 
-  // CSV export
+  // 2FA logic
+  const handleAuthorizeClick = (alert) => {
+    const randomCode = Math.floor(1000 + Math.random() * 9000).toString();
+    const images = ["/2fa1.png", "/2fa2.png", "/2fa3.png"]; // Add these to /public
+    const randomImage = images[Math.floor(Math.random() * images.length)];
+
+    setGeneratedCode(randomCode);
+    setTwoFAImage(randomImage);
+    setTwoFAAlert(alert);
+  };
+
+  const handleNotAuthorizeClick = (alert) => {
+    alert.status = "Not Authorized";
+  };
+
+  const handle2FASubmit = () => {
+    if (twoFACode === generatedCode) {
+      twoFAAlert.status = "Authorized";
+      setTwoFAAlert(null);
+      setTwoFACode("");
+      setGeneratedCode("");
+      alert("✅ Authorization successful");
+    } else {
+      alert("❌ Incorrect 2FA code. Please try again.");
+    }
+  };
+
+  // Export functions
   const exportToCSV = () => {
     const csvContent =
       "data:text/csv;charset=utf-8," +
@@ -41,7 +71,6 @@ export default function AlertHistoryModal({ isOpen, onClose, alerts }) {
     document.body.removeChild(link);
   };
 
-  // PDF export
   const exportToPDF = () => {
     const doc = new jsPDF();
     filteredAlerts.forEach((a, i) => {
@@ -56,15 +85,19 @@ export default function AlertHistoryModal({ isOpen, onClose, alerts }) {
     doc.save("alerts.pdf");
   };
 
+  // Helper: Colored badge for status
+  const getStatusColor = (status) => {
+    if (status === "Authorized") return "bg-green-100 text-green-700 border-green-400";
+    if (status === "Not Authorized") return "bg-red-100 text-red-700 border-red-400";
+    return "bg-yellow-100 text-yellow-700 border-yellow-400"; // default for pending
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white w-full max-w-lg p-5 rounded-2xl shadow-lg overflow-y-auto max-h-[90vh]">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-bold">Alert History</h2>
-          <button
-            className="text-gray-600 hover:text-gray-800"
-            onClick={onClose}
-          >
+          <button className="text-gray-600 hover:text-gray-800" onClick={onClose}>
             Close
           </button>
         </div>
@@ -121,10 +154,78 @@ export default function AlertHistoryModal({ isOpen, onClose, alerts }) {
                 <p className="text-sm">
                   Notified: {alert.notifiedNextOfKin.join(", ") || "-"}
                 </p>
-                <p className="text-sm">Status: {alert.status}</p>
+
+                {/* Colored Status Badge */}
+                <p
+                  className={`inline-block mt-1 px-2 py-1 text-xs font-semibold rounded border ${getStatusColor(
+                    alert.status
+                  )}`}
+                >
+                  {alert.status || "Pending"}
+                </p>
+
+                <div className="mt-2 flex gap-2">
+                  <button
+                    className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600"
+                    onClick={() => handleAuthorizeClick(alert)}
+                  >
+                    Authorize
+                  </button>
+                  <button
+                    className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
+                    onClick={() => handleNotAuthorizeClick(alert)}
+                  >
+                    Not Authorize
+                  </button>
+                </div>
               </li>
             ))}
           </ul>
+        )}
+
+        {/* 2FA Modal */}
+        {twoFAAlert && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4">
+            <div className="bg-white w-full max-w-sm p-5 rounded-2xl shadow-lg">
+              <h3 className="text-lg font-bold mb-3">2FA Verification</h3>
+              <p className="mb-2">
+                To authorize SIM:{" "}
+                <span className="font-semibold">{twoFAAlert.simNumber}</span>
+              </p>
+              <img
+                src={twoFAImage}
+                alt="2FA"
+                className="mb-3 w-full h-40 object-contain border rounded"
+              />
+              <p className="text-sm mb-2 text-gray-600">
+                Enter this 4-digit code:{" "}
+                <span className="font-mono text-lg text-blue-600">
+                  {generatedCode}
+                </span>
+              </p>
+              <input
+                type="text"
+                placeholder="Enter 2FA code"
+                className="border rounded px-3 py-1 w-full mb-3"
+                value={twoFACode}
+                onChange={(e) => setTwoFACode(e.target.value)}
+              />
+              <div className="flex justify-end gap-2">
+                <button
+                  className="bg-gray-400 text-white px-3 py-1 rounded hover:bg-gray-500"
+                  onClick={() => setTwoFAAlert(null)}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
+                  onClick={handle2FASubmit}
+                >
+                  Verify
+                </button>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>
