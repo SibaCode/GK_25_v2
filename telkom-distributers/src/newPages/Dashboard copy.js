@@ -1,12 +1,11 @@
 // src/newPages/Dashboard.js
 import React, { useState, useEffect } from "react";
-import { Plus, Bell, CreditCard, LogOut, Eye, Clock } from "lucide-react";
+import { Plus, Bell, CreditCard, Shield, LogOut, Eye, Clock } from "lucide-react";
 import { Link } from "react-router-dom";
 import { auth, db } from "../firebase";
 import { signOut } from "firebase/auth";
-import { doc, getDoc, onSnapshot , updateDoc} from "firebase/firestore";
+import { doc, getDoc, onSnapshot, updateDoc } from "firebase/firestore";
 import { useTranslation } from "react-i18next";
-import AlertHistoryModal from "./AlertHistoryModal";
 import DashboardTabs from "./DashboardTabs";
 import RegisterSimProtectionModal from "./RegisterSimProtectionModal";
 import ViewSimProtectionModal from "./ViewSimProtectionModal";
@@ -20,15 +19,7 @@ export default function Dashboard() {
 
   const { t, i18n } = useTranslation();
 
-  // Helper to refresh current user from Firestore
-  const refreshCurrentUser = async () => {
-    if (!auth.currentUser) return;
-    const docRef = doc(db, "users", auth.currentUser.uid);
-    const docSnap = await getDoc(docRef);
-    if (docSnap.exists()) setCurrentUser(docSnap.data());
-  };
-
-  // Fetch current user
+  // Fetch current user from Firestore
   useEffect(() => {
     const unsubscribeAuth = auth.onAuthStateChanged((user) => {
       if (user) {
@@ -43,7 +34,7 @@ export default function Dashboard() {
     return () => unsubscribeAuth();
   }, []);
 
-  // Update i18n language based on user's preferredLanguage
+  // Update i18n language based on user's preferredLanguage from DB
   useEffect(() => {
     if (currentUser?.preferredLanguage) {
       i18n.changeLanguage(currentUser.preferredLanguage);
@@ -119,12 +110,20 @@ export default function Dashboard() {
           <button className="bg-gray-100 text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-200 transition text-sm font-medium flex items-center justify-center gap-2">
             <span className="text-blue-500 font-bold">?</span> {t("help")}
           </button>
-           <button
-                  onClick={() => setOpenModal(currentUser.simProtection ? "view" : "register")}
-                  className="mt-3 bg-white text-blue-500 px-3 py-1 rounded-lg hover:bg-gray-100 transition text-sm font-medium shadow"
-                >
-                  {currentUser.simProtection ? "Manage SIM" : "Register SIM"}
-                </button>
+
+          {/* Register SIM */}
+     
+
+          {/* Manage SIMs */}
+          {currentUser.simProtection && (
+            <button
+              onClick={() => setOpenModal("view")}
+              className="bg-blue-500 text-white px-4 py-2 rounded-xl hover:bg-blue-600 transition duration-200 shadow-sm text-sm font-medium w-full"
+            >
+              Manage SIMs
+            </button>
+          )}
+
           {/* Logout */}
           <button
             onClick={handleLogout}
@@ -140,7 +139,6 @@ export default function Dashboard() {
           <div className="bg-white p-6 rounded-3xl shadow-lg text-gray-700">
             <h2 className="text-xl font-bold mb-5">{t("yourDataSummary")}</h2>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-
               {/* Total SIMs */}
               <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white p-5 rounded-2xl flex flex-col justify-between shadow-md hover:scale-105 transform transition duration-200">
                 <div>
@@ -150,13 +148,6 @@ export default function Dashboard() {
                     {currentUser.simProtection?.selectedNumber ? 1 : 0}
                   </p>
                 </div>
-<button
-  onClick={() => setOpenModal("register")}
-  className="mt-3 bg-white text-blue-500 px-3 py-1 rounded-lg hover:bg-gray-100 transition text-sm font-medium shadow"
->
-  Register SIM
-</button>
-               
               </div>
 
               {/* Active Alerts */}
@@ -166,7 +157,6 @@ export default function Dashboard() {
                   <p className="text-sm">{t("activeAlerts")}</p>
                   <p className="text-3xl font-bold mt-1">{alerts.length}</p>
                 </div>
-              
                 <button
                   onClick={() => setIsAlertModalOpen(true)}
                   className="mt-3 bg-white text-red-600 px-3 py-1 rounded-lg hover:bg-gray-100 transition text-sm font-medium shadow flex items-center justify-center gap-1 relative"
@@ -190,7 +180,6 @@ export default function Dashboard() {
                     : "-"}
                 </p>
               </div>
-
             </div>
           </div>
 
@@ -215,17 +204,13 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Modals */}
-    {openModal === "register" && (
-  <RegisterSimProtectionModal
-    isOpen={true} // <-- make sure to pass this
-    onClose={() => {
-      setOpenModal(null);
-      refreshCurrentUser(); // your function to reload user data
-    }}
-  />
-)}
+      {/* Register SIM Modal */}
+      <RegisterSimProtectionModal
+        isOpen={openModal === "register"}
+        onClose={() => setOpenModal(null)}
+      />
 
+      {/* View SIM Modal */}
       {openModal === "view" && (
         <ViewSimProtectionModal
           data={currentUser.simProtection}
@@ -234,6 +219,7 @@ export default function Dashboard() {
         />
       )}
 
+      {/* Edit SIM Modal */}
       {openModal === "edit" && (
         <EditSimProtectionModal
           data={currentUser.simProtection}
@@ -242,13 +228,42 @@ export default function Dashboard() {
       )}
 
       {/* Alerts Modal */}
-      <AlertHistoryModal
-  isOpen={isAlertModalOpen}
-  onClose={() => setIsAlertModalOpen(false)}
-  alerts={alerts}
-/>
-
-   
+      {isAlertModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white w-full max-w-3xl p-6 rounded-3xl shadow-lg overflow-y-auto max-h-[80vh] scroll-smooth">
+            <div className="flex justify-between items-center mb-5">
+              <h2 className="text-xl font-bold">{t("activeAlerts")}</h2>
+              <button
+                className="text-gray-600 hover:text-gray-800 font-medium"
+                onClick={() => setIsAlertModalOpen(false)}
+              >
+                {t("close") || "Close"}
+              </button>
+            </div>
+            {alerts.length === 0 && <p className="text-sm text-gray-500">{t("noAlerts") || "No alerts yet."}</p>}
+            <ul className="space-y-3">
+              {alerts.map((alert, idx) => (
+                <li
+                  key={idx}
+                  className={`border-l-4 pl-4 p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition shadow-sm ${
+                    alert.status === "high"
+                      ? "border-red-500"
+                      : alert.status === "medium"
+                      ? "border-yellow-400"
+                      : "border-green-400"
+                  } ${alert.isNew ? "bg-yellow-50 animate-pulse" : ""}`}
+                >
+                  <p className="text-sm font-semibold">SIM: {alert.simNumber}</p>
+                  <p className="text-sm">Time: {alert.timestamp?.toDate().toLocaleString()}</p>
+                  <p className="text-sm">Affected Banks: {alert.affectedBanks.join(", ") || "-"}</p>
+                  <p className="text-sm">Notified: {alert.notifiedNextOfKin.join(", ") || "-"}</p>
+                  <p className="text-sm font-medium">Status: {alert.status}</p>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

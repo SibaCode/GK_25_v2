@@ -119,12 +119,7 @@ export default function Dashboard() {
           <button className="bg-gray-100 text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-200 transition text-sm font-medium flex items-center justify-center gap-2">
             <span className="text-blue-500 font-bold">?</span> {t("help")}
           </button>
-           <button
-                  onClick={() => setOpenModal(currentUser.simProtection ? "view" : "register")}
-                  className="mt-3 bg-white text-blue-500 px-3 py-1 rounded-lg hover:bg-gray-100 transition text-sm font-medium shadow"
-                >
-                  {currentUser.simProtection ? "Manage SIM" : "Register SIM"}
-                </button>
+
           {/* Logout */}
           <button
             onClick={handleLogout}
@@ -150,13 +145,13 @@ export default function Dashboard() {
                     {currentUser.simProtection?.selectedNumber ? 1 : 0}
                   </p>
                 </div>
-<button
-  onClick={() => setOpenModal("register")}
-  className="mt-3 bg-white text-blue-500 px-3 py-1 rounded-lg hover:bg-gray-100 transition text-sm font-medium shadow"
->
-  Register SIM
-</button>
-               
+
+                <button
+                  onClick={() => setOpenModal(currentUser.simProtection ? "view" : "register")}
+                  className="mt-3 bg-white text-blue-500 px-3 py-1 rounded-lg hover:bg-gray-100 transition text-sm font-medium shadow"
+                >
+                  {currentUser.simProtection ? "Manage SIM" : "Register SIM"}
+                </button>
               </div>
 
               {/* Active Alerts */}
@@ -216,15 +211,14 @@ export default function Dashboard() {
       </div>
 
       {/* Modals */}
-    {openModal === "register" && (
-  <RegisterSimProtectionModal
-    isOpen={true} // <-- make sure to pass this
-    onClose={() => {
-      setOpenModal(null);
-      refreshCurrentUser(); // your function to reload user data
-    }}
-  />
-)}
+      {openModal === "register" && (
+        <RegisterSimProtectionModal
+          onClose={() => {
+            setOpenModal(null);
+            refreshCurrentUser();
+          }}
+        />
+      )}
 
       {openModal === "view" && (
         <ViewSimProtectionModal
