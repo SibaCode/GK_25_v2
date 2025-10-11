@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { auth, db } from "../firebase";
 import { signOut } from "firebase/auth";
-import { doc, getDoc, updateDoc, arrayUnion, Timestamp, onSnapshot } from "firebase/firestore";
+import { doc, updateDoc, arrayUnion, Timestamp, onSnapshot } from "firebase/firestore";
 import { LogOut } from "lucide-react";
 import emailjs from "@emailjs/browser";
 
@@ -12,7 +12,7 @@ export default function SimActivity() {
   const [selectedSim, setSelectedSim] = useState("");
   const [triggering, setTriggering] = useState(false);
 
-  // Fetch user data and listen for real-time updates
+  // Listen for auth changes and Firestore updates
   useEffect(() => {
     const unsubscribeAuth = auth.onAuthStateChanged(async (user) => {
       if (user) {
@@ -22,7 +22,6 @@ export default function SimActivity() {
             const data = docSnap.data();
             setCurrentUser(data);
 
-            // pre-fill the first registered SIM
             const firstSim =
               data.simProtection?.selectedNumber ||
               (data.simProtection?.bankAccounts?.[0]?.accountNumber ?? "");
@@ -30,13 +29,9 @@ export default function SimActivity() {
           }
           setLoading(false);
         });
-
         return () => unsubscribeSnapshot();
-      } else {
-        setLoading(false);
-      }
+      } else setLoading(false);
     });
-
     return () => unsubscribeAuth();
   }, []);
 
@@ -53,10 +48,11 @@ export default function SimActivity() {
   const handleTriggerAlert = async () => {
     if (!selectedSim) return;
     setTriggering(true);
+
     try {
       const docRef = doc(db, "users", auth.currentUser.uid);
 
-      // generate a simple Case Number
+      // generate case number
       const caseNumber = `CASE-${Math.floor(1000 + Math.random() * 9000)}`;
 
       const newAlert = {
@@ -65,7 +61,7 @@ export default function SimActivity() {
         affectedBanks: currentUser.simProtection?.bankAccounts?.map((b) => b.bankName) || [],
         notifiedNextOfKin: currentUser.simProtection?.nextOfKin?.map((n) => n.name) || [],
         status: "pending",
-        caseNumber: caseNumber,
+        caseNumber,
       };
 
       // Save alert in Firestore
@@ -73,20 +69,31 @@ export default function SimActivity() {
         "simProtection.activeAlertsArray": arrayUnion(newAlert),
       });
 
-      // Send email via EmailJS
+      // Language support
+      const messages = {
+        en: { greeting: "Dear user,", followUp: "Please review this alert immediately." },
+        zu: { greeting: "Mhlonishwa umsebenzisi,", followUp: "Sicela uhlole le alert ngokushesha." },
+        xh: { greeting: "Mthandi mhlobo,", followUp: "Nceda ujonge esi sixwayiso ngokukhawuleza." },
+        af: { greeting: "Beste gebruiker,", followUp: "Kontroleer hierdie waarskuwing onmiddellik." },
+      };
+      const lang = currentUser.preferredLanguage || "en";
+
+      // Send professional email
       await emailjs.send(
-        "service_gs10hsn",       // Your Service ID
-        "template_tu6ca39",      // Your Template ID
+        "service_gs10hsn",
+        "template_tu6ca39",
         {
+          to_email: currentUser.email,
           sim_number: newAlert.simNumber,
-          affected_banks: newAlert.affectedBanks.join(", "),
-          notified: newAlert.notifiedNextOfKin.join(", "),
+          affected_banks: newAlert.affectedBanks.join(", ") || "-",
+          notified: newAlert.notifiedNextOfKin.join(", ") || "-",
           status: newAlert.status,
           time: newAlert.timestamp.toDate().toLocaleString(),
-          to_email: currentUser.email,
           case_number: newAlert.caseNumber,
+          greeting: messages[lang].greeting,
+          followup: messages[lang].followUp,
         },
-        "3U2Dnx4hFe8-eLaQk"         // Replace with your EmailJS public key
+        "3U2Dnx4hFe8-eLaQk"
       );
 
       alert("Alert triggered and email sent successfully!");
@@ -125,6 +132,7 @@ export default function SimActivity() {
               <p className="text-sm text-gray-500">{currentUser.phone}</p>
             </div>
           </div>
+
           <div>
             <h3 className="font-semibold text-gray-700 mb-2">Next of Kin</h3>
             {currentUser.simProtection?.nextOfKin?.length
@@ -173,10 +181,7 @@ export default function SimActivity() {
             <h2 className="text-lg font-bold mb-2">Alert Timeline</h2>
             {alerts.length === 0 && <p className="text-sm text-gray-500">No alerts yet.</p>}
             <ul className="space-y-3">
-              {alerts
-                .slice()
-                .reverse()
-                .map((alert, idx) => (
+              {alerts.slice().reverse().map((alert, idx) => (
                 <li key={idx} className="border-l-2 border-blue-500 pl-3 p-3 rounded-md hover:bg-gray-50 transition">
                   <p className="text-sm font-semibold">Case: {alert.caseNumber}</p>
                   <p className="text-sm font-semibold">SIM: {alert.simNumber}</p>
