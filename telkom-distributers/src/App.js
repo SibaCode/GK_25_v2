@@ -1,7 +1,8 @@
 // src/App.js
 import React from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import "./i18n";
+
 // Pages
 import Register from "./newPages/Register";
 import Login from "./newPages/Login";
@@ -9,34 +10,36 @@ import Dashboard from "./newPages/Dashboard";
 import RegisterSimProtection from "./newPages/RegisterSimProtection";
 import AlertsPage from "./newPages/AlertsPage";
 import SimActivity from "./newPages/SimActivity";
+import HomePage from "./newPages/HomePage";
+
 function App() {
   return (
     <Router>
       <Routes>
-        {/* Home / Register */}
-        <Route path="/register" element={<Register />} />
+        {/* Home / Welcome page */}
+        <Route
+          path="/"
+          element={
+            <HomePage />
+          }
+        />
 
-        {/* Login */}
+        {/* Auth routes */}
+        <Route path="/register" element={<Register />} />
         <Route path="/login" element={<Login />} />
 
         {/* Dashboard */}
         <Route path="/dashboard" element={<Dashboard />} />
 
-        {/* Register SIM */}
+        {/* SIM Protection */}
         <Route path="/register-sim" element={<RegisterSimProtection />} />
-           <Route path="trigger" element={<SimActivity />} />
+        <Route path="/trigger" element={<SimActivity />} />
 
-        {/* Default route */}
-        <Route
-          path="/y"
-          element={
-            <div className="min-h-screen flex items-center justify-center bg-blue-50 px-4">
-              <h1 className="text-3xl font-bold text-blue-700 text-center">
-                Welcome to SIM Protection
-              </h1>
-            </div>
-          }
-        />
+        {/* Alerts */}
+        <Route path="/alerts" element={<AlertsPage />} />
+
+        {/* Redirect unknown routes to home */}
+        <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </Router>
   );

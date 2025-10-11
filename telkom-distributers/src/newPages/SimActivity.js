@@ -1,84 +1,200 @@
-// src/newPages/ViewSimProtectionModal.js
-import React from "react";
-import { motion } from "framer-motion";
-import { X } from "lucide-react";
+// src/newPages/SimActivity.js
+import React, { useState, useEffect } from "react";
+import { auth, db } from "../firebase";
+import { signOut } from "firebase/auth";
+import { doc, updateDoc, arrayUnion, Timestamp, onSnapshot } from "firebase/firestore";
+import { LogOut } from "lucide-react";
+import emailjs from "@emailjs/browser";
 
-export default function ViewSimProtectionModal({ data, onClose, onEdit }) {
-  if (!data) return null;
+export default function SimActivity() {
+  const [currentUser, setCurrentUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [selectedSim, setSelectedSim] = useState("");
+  const [triggering, setTriggering] = useState(false);
 
-  const simCards = data.simCards || [];
+  // Listen for auth changes and Firestore updates
+  useEffect(() => {
+    const unsubscribeAuth = auth.onAuthStateChanged(async (user) => {
+      if (user) {
+        const docRef = doc(db, "users", user.uid);
+        const unsubscribeSnapshot = onSnapshot(docRef, (docSnap) => {
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            setCurrentUser(data);
+
+            const firstSim =
+              data.simProtection?.selectedNumber ||
+              (data.simProtection?.bankAccounts?.[0]?.accountNumber ?? "");
+            setSelectedSim(firstSim);
+          }
+          setLoading(false);
+        });
+        return () => unsubscribeSnapshot();
+      } else setLoading(false);
+    });
+    return () => unsubscribeAuth();
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      window.location.href = "/login";
+    } catch (error) {
+      console.error("Logout failed:", error);
+      alert("Failed to logout. Try again.");
+    }
+  };
+
+  const handleTriggerAlert = async () => {
+    if (!selectedSim) return;
+    setTriggering(true);
+
+    try {
+      const docRef = doc(db, "users", auth.currentUser.uid);
+
+      // generate case number
+      const caseNumber = `CASE-${Math.floor(1000 + Math.random() * 9000)}`;
+
+      const newAlert = {
+        simNumber: selectedSim,
+        timestamp: Timestamp.now(),
+        affectedBanks: currentUser.simProtection?.bankAccounts?.map((b) => b.bankName) || [],
+        notifiedNextOfKin: currentUser.simProtection?.nextOfKin?.map((n) => n.name) || [],
+        status: "pending",
+        caseNumber,
+      };
+
+      // Save alert in Firestore
+      await updateDoc(docRef, {
+        "simProtection.activeAlertsArray": arrayUnion(newAlert),
+      });
+
+      // Language support
+      const messages = {
+        en: { greeting: "Dear user,", followUp: "Please review this alert immediately." },
+        zu: { greeting: "Mhlonishwa umsebenzisi,", followUp: "Sicela uhlole le alert ngokushesha." },
+        xh: { greeting: "Mthandi mhlobo,", followUp: "Nceda ujonge esi sixwayiso ngokukhawuleza." },
+        af: { greeting: "Beste gebruiker,", followUp: "Kontroleer hierdie waarskuwing onmiddellik." },
+      };
+      const lang = currentUser.preferredLanguage || "en";
+
+      // Send professional email
+      await emailjs.send(
+        "service_gs10hsn",
+        "template_tu6ca39",
+        {
+          to_email: currentUser.email,
+          sim_number: newAlert.simNumber,
+          affected_banks: newAlert.affectedBanks.join(", ") || "-",
+          notified: newAlert.notifiedNextOfKin.join(", ") || "-",
+          status: newAlert.status,
+          time: newAlert.timestamp.toDate().toLocaleString(),
+          case_number: newAlert.caseNumber,
+          greeting: messages[lang].greeting,
+          followup: messages[lang].followUp,
+        },
+        "3U2Dnx4hFe8-eLaQk"
+      );
+
+      alert("Alert triggered and email sent successfully!");
+    } catch (error) {
+      console.error(error);
+      alert("Failed to trigger alert or send email.");
+    }
+    setTriggering(false);
+  };
+
+  if (loading) return <p className="text-center mt-10">Loading SIM data...</p>;
+  if (!currentUser) return <p className="text-center mt-10">No user logged in</p>;
+
+  const simNumbers = [];
+  if (currentUser.simProtection?.selectedNumber) simNumbers.push(currentUser.simProtection.selectedNumber);
+  if (currentUser.simProtection?.bankAccounts) {
+    currentUser.simProtection.bankAccounts.forEach((acc) => {
+      if (!simNumbers.includes(acc.accountNumber)) simNumbers.push(acc.accountNumber);
+    });
+  }
+
+  const alerts = currentUser.simProtection?.activeAlertsArray || [];
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: 20 }}
-        transition={{ duration: 0.2 }}
-        className="bg-white w-full max-w-2xl rounded-3xl shadow-lg overflow-y-auto max-h-[80vh] p-6 relative"
-      >
-        {/* Header */}
-        <div className="flex justify-between items-center border-b border-gray-200 pb-3 mb-4">
-          <h2 className="text-lg font-bold text-gray-800">SIM Protection Details</h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
-            <X size={20} />
-          </button>
-        </div>
-
-        {/* SIM Cards Timeline */}
-        <div className="space-y-4">
-          {simCards.length === 0 ? (
-            <p className="text-center text-gray-500 py-6">No SIMs registered yet.</p>
-          ) : (
-            <div>
-              <h2 className="text-lg font-bold mb-2 text-gray-800">SIM Cards</h2>
-              <ul className="space-y-3">
-                {simCards.slice().reverse().map((sim, idx) => (
-                  <li
-                    key={idx}
-                    className="border-l-2 border-blue-500 pl-3 p-3 rounded-md hover:bg-gray-50 transition"
-                  >
-                    <p className="text-sm font-semibold">SIM {idx + 1}</p>
-                    <p className="text-sm font-semibold">ID Number: {sim.idNumber || "-"}</p>
-                    <p className="text-sm font-semibold">Linked Number: {sim.selectedNumber || "None"}</p>
-                    <p className="text-sm">Preferred Language: {sim.preferredLanguage?.toUpperCase() || "-"}</p>
-                    <p className="text-sm">Email Alerts: {sim.emailAlert ? sim.email : "No"}</p>
-                    <p className="text-sm">
-                      Next of Kin Alerts:{" "}
-                      {sim.nextOfKinAlert && sim.nextOfKin?.length > 0
-                        ? sim.nextOfKin.map((kin, i) => `${kin.name} - ${kin.number}`).join(", ")
-                        : "No"}
-                    </p>
-                    <p className="text-sm">Auto-lock SIM: {sim.autoLock ? "Yes" : "No"}</p>
-                    <p className="text-sm">
-                      Bank Accounts:{" "}
-                      {sim.bankAccounts && sim.bankAccounts.length > 0
-                        ? sim.bankAccounts.map((acc) => `${acc.bankName} - ${acc.accountNumber}`).join(", ")
-                        : "No accounts"}
-                    </p>
-                  </li>
-                ))}
-              </ul>
+    <div className="min-h-screen bg-gray-50 p-4">
+      <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-6">
+        {/* Sidebar */}
+        <div className="lg:col-span-1 bg-white rounded-2xl shadow-md p-6 sticky top-4">
+          <div className="flex items-center gap-4 mb-4">
+            <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-lg">
+              {currentUser.fullName?.split(" ").map((n) => n[0]).join("") || "U"}
             </div>
-          )}
+            <div>
+              <h2 className="font-bold text-gray-700">{currentUser.fullName}</h2>
+              <p className="text-sm text-gray-500">{currentUser.email}</p>
+              <p className="text-sm text-gray-500">{currentUser.phone}</p>
+            </div>
+          </div>
+
+          <div>
+            <h3 className="font-semibold text-gray-700 mb-2">Next of Kin</h3>
+            {currentUser.simProtection?.nextOfKin?.length
+              ? currentUser.simProtection.nextOfKin.map((kin, idx) => (
+                  <div key={idx} className="text-sm text-gray-600 mb-1">
+                    {kin.name} - {kin.number}
+                  </div>
+                ))
+              : <p className="text-sm text-gray-500">No next of kin added</p>}
+          </div>
+
+          <button
+            onClick={handleLogout}
+            className="mt-4 flex items-center gap-2 bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition"
+          >
+            <LogOut className="w-4 h-4" /> Logout
+          </button>
         </div>
 
-        {/* Actions */}
-        <div className="mt-5 flex justify-end gap-3">
-          <button
-            onClick={onEdit}
-            className="bg-black text-white px-4 py-2 rounded-xl hover:bg-gray-800 transition font-medium"
-          >
-            Edit
-          </button>
-          <button
-            onClick={onClose}
-            className="bg-gray-200 text-gray-800 px-4 py-2 rounded-xl hover:bg-gray-300 transition font-medium"
-          >
-            Close
-          </button>
+        {/* Main Content */}
+        <div className="lg:col-span-3 space-y-6">
+          {/* SIM Selection */}
+          <div className="bg-white p-6 rounded-2xl shadow-md text-gray-700">
+            <h2 className="text-lg font-bold mb-2">Trigger SIM Activity</h2>
+            <p className="text-sm mb-2">Select a SIM to trigger an alert:</p>
+            <select
+              className="border rounded-lg p-2 mb-4 w-full"
+              value={selectedSim}
+              onChange={(e) => setSelectedSim(e.target.value)}
+            >
+              {simNumbers.map((sim, idx) => (
+                <option key={idx} value={sim}>{sim}</option>
+              ))}
+            </select>
+            <button
+              onClick={handleTriggerAlert}
+              disabled={triggering}
+              className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition"
+            >
+              {triggering ? "Triggering..." : "Trigger Alert"}
+            </button>
+          </div>
+
+          {/* Alert Timeline */}
+          <div className="bg-white p-6 rounded-2xl shadow-md text-gray-700">
+            <h2 className="text-lg font-bold mb-2">Alert Timeline</h2>
+            {alerts.length === 0 && <p className="text-sm text-gray-500">No alerts yet.</p>}
+            <ul className="space-y-3">
+              {alerts.slice().reverse().map((alert, idx) => (
+                <li key={idx} className="border-l-2 border-blue-500 pl-3 p-3 rounded-md hover:bg-gray-50 transition">
+                  <p className="text-sm font-semibold">Case: {alert.caseNumber}</p>
+                  <p className="text-sm font-semibold">SIM: {alert.simNumber}</p>
+                  <p className="text-sm">Time: {alert.timestamp?.toDate().toLocaleString()}</p>
+                  <p className="text-sm">Affected Banks: {alert.affectedBanks.join(", ") || "-"}</p>
+                  <p className="text-sm">Notified: {alert.notifiedNextOfKin.join(", ") || "-"}</p>
+                  <p className="text-sm">Status: {alert.status}</p>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 }
