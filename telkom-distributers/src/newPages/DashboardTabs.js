@@ -34,21 +34,21 @@ export default function DashboardTabs({ t }) {
   return (
     <div className="bg-white p-6 rounded-2xl shadow-sm text-gray-700">
       {/* Tab Buttons */}
-      <div className="flex space-x-4 mb-4 overflow-x-auto">
-        {tabs.map(tab => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`px-3 py-2 font-medium rounded-lg whitespace-nowrap ${
-              activeTab === tab
-                ? "bg-blue-500 text-white"
-                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-            }`}
-          >
-            {t(tab.toLowerCase())}
-          </button>
-        ))}
-      </div>
+  <div className="flex space-x-4 mb-4 overflow-x-auto">
+  {tabs.map(tab => (
+    <button
+      key={tab}
+      onClick={() => setActiveTab(tab)}
+      className={`px-3 py-2 font-medium rounded-lg whitespace-nowrap ${
+        activeTab === tab
+          ? "bg-blue-500 text-white"
+          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+      }`}
+    >
+      {t(tab)}
+    </button>
+  ))}
+</div>
 
       {/* Tab Content */}
    {activeTab === "About" && (
@@ -83,7 +83,7 @@ export default function DashboardTabs({ t }) {
 
 {activeTab === "Education" && (
   <div className="bg-white p-6 rounded-2xl shadow-md text-gray-700">
-    <h2 className="text-lg font-bold mb-4">{t("education")}</h2>
+    <h2 className="text-lg font-bold mb-4">{t("Education")}</h2>
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
       {educationTips.map((tip, idx) => (
         <div
