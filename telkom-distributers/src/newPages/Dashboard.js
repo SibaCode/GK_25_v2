@@ -1,22 +1,34 @@
 // src/newPages/Dashboard.js
 import React, { useState, useEffect } from "react";
-import { Plus, Bell, CreditCard, Shield, LogOut, Eye, Clock } from "lucide-react";
+import { Plus, Bell, CreditCard, LogOut, Eye, Clock } from "lucide-react";
 import { Link } from "react-router-dom";
-import RegisterSimProtectionModal from "./RegisterSimProtectionModal";
 import { auth, db } from "../firebase";
 import { signOut } from "firebase/auth";
-import { doc, getDoc, onSnapshot, updateDoc } from "firebase/firestore";
+import { doc, getDoc, onSnapshot , updateDoc} from "firebase/firestore";
 import { useTranslation } from "react-i18next";
+
 import DashboardTabs from "./DashboardTabs";
+import RegisterSimProtectionModal from "./RegisterSimProtectionModal";
+import ViewSimProtectionModal from "./ViewSimProtectionModal";
+import EditSimProtectionModal from "./EditSimProtectionModal";
 
 export default function Dashboard() {
   const [currentUser, setCurrentUser] = useState(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [isAlertModalOpen, setIsAlertModalOpen] = useState(false);
+  const [openModal, setOpenModal] = useState(null); // null | "register" | "view" | "edit"
 
   const { t, i18n } = useTranslation();
 
+  // Helper to refresh current user from Firestore
+  const refreshCurrentUser = async () => {
+    if (!auth.currentUser) return;
+    const docRef = doc(db, "users", auth.currentUser.uid);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) setCurrentUser(docSnap.data());
+  };
+
+  // Fetch current user
   useEffect(() => {
     const unsubscribeAuth = auth.onAuthStateChanged((user) => {
       if (user) {
@@ -31,7 +43,7 @@ export default function Dashboard() {
     return () => unsubscribeAuth();
   }, []);
 
-  // Update i18n language based on user's preferredLanguage from DB
+  // Update i18n language based on user's preferredLanguage
   useEffect(() => {
     if (currentUser?.preferredLanguage) {
       i18n.changeLanguage(currentUser.preferredLanguage);
@@ -48,11 +60,6 @@ export default function Dashboard() {
     }
   };
 
-  if (loading) return <p className="text-center mt-10 text-gray-600">{t("loadingUser")}</p>;
-  if (!currentUser) return <p className="text-center mt-10 text-gray-600">{t("noUser")}</p>;
-
-  const alerts = currentUser.simProtection?.activeAlertsArray || [];
-
   const handleLanguageChange = async (newLang) => {
     i18n.changeLanguage(newLang);
     if (auth.currentUser) {
@@ -66,12 +73,17 @@ export default function Dashboard() {
     }
   };
 
+  if (loading) return <p className="text-center mt-10 text-gray-600">{t("loadingUser")}</p>;
+  if (!currentUser) return <p className="text-center mt-10 text-gray-600">{t("noUser")}</p>;
+
+  const alerts = currentUser.simProtection?.activeAlertsArray || [];
+
   return (
     <div className="min-h-screen bg-gray-100">
       <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-6 p-4">
 
         {/* Sidebar */}
-       <div className="lg:col-span-1 bg-white rounded-3xl shadow-md p-5 flex flex-col gap-6 overflow-auto max-h-[90vh]">
+        <div className="lg:col-span-1 bg-white rounded-3xl shadow-md p-5 flex flex-col gap-6 overflow-auto max-h-[90vh]">
           {/* Profile */}
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 rounded-full bg-gradient-to-tr from-blue-200 to-blue-400 flex items-center justify-center text-blue-600 font-bold text-lg shadow">
@@ -123,6 +135,7 @@ export default function Dashboard() {
           <div className="bg-white p-6 rounded-3xl shadow-lg text-gray-700">
             <h2 className="text-xl font-bold mb-5">{t("yourDataSummary")}</h2>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+
               {/* Total SIMs */}
               <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white p-5 rounded-2xl flex flex-col justify-between shadow-md hover:scale-105 transform transition duration-200">
                 <div>
@@ -132,11 +145,12 @@ export default function Dashboard() {
                     {currentUser.simProtection?.selectedNumber ? 1 : 0}
                   </p>
                 </div>
+
                 <button
-                  onClick={() => setIsModalOpen(true)}
+                  onClick={() => setOpenModal(currentUser.simProtection ? "view" : "register")}
                   className="mt-3 bg-white text-blue-500 px-3 py-1 rounded-lg hover:bg-gray-100 transition text-sm font-medium shadow"
                 >
-                  {t("registerSim")}
+                  {currentUser.simProtection ? "Manage SIM" : "Register SIM"}
                 </button>
               </div>
 
@@ -170,6 +184,7 @@ export default function Dashboard() {
                     : "-"}
                 </p>
               </div>
+
             </div>
           </div>
 
@@ -194,21 +209,30 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Register SIM Modal */}
-      <RegisterSimProtectionModal
-        isOpen={isModalOpen}
-        onClose={() => {
-          setIsModalOpen(false);
-          if (auth.currentUser) {
-            const refresh = async () => {
-              const docRef = doc(db, "users", auth.currentUser.uid);
-              const docSnap = await getDoc(docRef);
-              if (docSnap.exists()) setCurrentUser(docSnap.data());
-            };
-            refresh();
-          }
-        }}
-      />
+      {/* Modals */}
+      {openModal === "register" && (
+        <RegisterSimProtectionModal
+          onClose={() => {
+            setOpenModal(null);
+            refreshCurrentUser();
+          }}
+        />
+      )}
+
+      {openModal === "view" && (
+        <ViewSimProtectionModal
+          data={currentUser.simProtection}
+          onEdit={() => setOpenModal("edit")}
+          onClose={() => setOpenModal(null)}
+        />
+      )}
+
+      {openModal === "edit" && (
+        <EditSimProtectionModal
+          data={currentUser.simProtection}
+          onClose={() => setOpenModal(null)}
+        />
+      )}
 
       {/* Alerts Modal */}
       {isAlertModalOpen && (

@@ -24,7 +24,7 @@ function App() {
 
         {/* Register SIM */}
         <Route path="/register-sim" element={<RegisterSimProtection />} />
-                                <Route path="trigger" element={<SimActivity />} />
+           <Route path="trigger" element={<SimActivity />} />
 
         {/* Default route */}
         <Route
