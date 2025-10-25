@@ -12,7 +12,7 @@ import RegisterSimProtectionModal from "./RegisterSimProtectionModal";
 import ViewSimProtectionModal from "./ViewSimProtectionModal";
 import EditSimProtectionModal from "./EditSimProtectionModal";
 
-export default function Dashboard() {
+export default function SimFraud() {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isAlertModalOpen, setIsAlertModalOpen] = useState(false);
@@ -125,7 +125,7 @@ export default function Dashboard() {
     <Link to="/SimFraud" className="flex items-center gap-2 p-3 rounded-lg hover:bg-blue-50 transition">
       <Bell className="w-5 h-5 text-blue-600" /> SIM Fraud Alert
     </Link>
-    <Link to="/Creditlock" className="flex items-center gap-2 p-3 rounded-lg hover:bg-blue-50 transition">
+    <Link to="/CreditLock" className="flex items-center gap-2 p-3 rounded-lg hover:bg-blue-50 transition">
       <Lock className="w-5 h-5 text-blue-600" /> Credit File Lock
     </Link>
     <Link to="/DataBroker" className="flex items-center gap-2 p-3 rounded-lg hover:bg-blue-50 transition">
@@ -150,28 +150,70 @@ export default function Dashboard() {
 
         {/* Main Dashboard */}
         <div className="lg:col-span-3 space-y-6 overflow-auto max-h-[90vh]">
+          {/* User Data Summary */}
+          <div className="bg-white p-6 rounded-3xl shadow-lg text-gray-700">
+            <h2 className="text-xl font-bold mb-5">{t("yourDataSummary")}</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
 
-            {/* Welcome / Greeting */}
-            <div className="bg-white p-6 rounded-3xl shadow-md text-gray-700">
-              <h2 className="text-xl font-bold mb-2">{t("welcome")}, {currentUser.fullName.split(" ")[0]}!</h2>
-              <p className="text-sm text-gray-500">{t("dashboardGreeting") || "Stay protected and manage your data easily."}</p>
+              {/* Total SIMs */}
+              <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white p-5 rounded-2xl flex flex-col justify-between shadow-md hover:scale-105 transform transition duration-200">
+                <div>
+                  <CreditCard className="w-8 h-8 mb-2 transform transition duration-300 hover:scale-110" />
+                  <p className="text-sm">{t("totalSims")}</p>
+                  <p className="text-3xl font-bold mt-1">
+                    {currentUser.simProtection?.selectedNumber ? 1 : 0}
+                  </p>
+                </div>
+                 <button
+                                     onClick={() => setOpenModal("view")}
+
+                  // onClick={() => setOpenModal(currentUser.simProtection ? "view" : "register")}
+                  className="mt-3 bg-white text-blue-500 px-3 py-1 rounded-lg hover:bg-gray-100 transition text-sm font-medium shadow"
+                >
+                Manage SIM           
+                     </button>
+                  <button
+                    onClick={() => setOpenModal("register")}
+                    className="mt-3 bg-white text-blue-500 px-3 py-1 rounded-lg hover:bg-gray-100 transition text-sm font-medium shadow"
+                  >
+                    Register SIM
+                  </button>
+               
+              </div>
+
+              {/* Active Alerts */}
+              <div className="relative bg-gradient-to-br from-red-500 to-red-600 text-white p-5 rounded-2xl flex flex-col justify-between shadow-md hover:scale-105 transform transition duration-200">
+                <div>
+                  <Bell className="w-8 h-8 mb-2 transform transition duration-300 hover:scale-110" />
+                  <p className="text-sm">{t("activeAlerts")}</p>
+                  <p className="text-3xl font-bold mt-1">{alerts.length}</p>
+                </div>
+              
+                <button
+                  onClick={() => setIsAlertModalOpen(true)}
+                  className="mt-3 bg-white text-red-600 px-3 py-1 rounded-lg hover:bg-gray-100 transition text-sm font-medium shadow flex items-center justify-center gap-1 relative"
+                >
+                  <Eye className="w-4 h-4" /> {t("viewAlerts")}
+                  {alerts.length > 0 && (
+                    <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center animate-pulse">
+                      {alerts.length}
+                    </span>
+                  )}
+                </button>
+              </div>
+
+              {/* Last Updated */}
+             <div className="bg-gray-200 text-gray-800 p-5 rounded-2xl flex flex-col justify-center text-center shadow-sm">
+              <Clock className="w-8 h-8 mb-2 transform transition duration-300 hover:scale-110" />
+              <p className="text-sm">{t("lastUpdated")}</p>
+              <p className="text-2xl font-semibold mt-1">
+                {new Date().toLocaleString()}
+              </p>
             </div>
-        {/* Services Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-          <Link to="/SimFraud" className="bg-gradient-to-br from-blue-400 to-blue-600 text-white p-5 rounded-2xl flex flex-col justify-center items-center shadow-md hover:scale-105 transform transition duration-200">
-            <Bell className="w-10 h-10 mb-2" />
-            <p className="text-lg font-semibold text-center">SIM Fraud Alert</p>
-          </Link>
-          <Link to="/CreditLock" className="bg-gradient-to-br from-purple-400 to-purple-600 text-white p-5 rounded-2xl flex flex-col justify-center items-center shadow-md hover:scale-105 transform transition duration-200">
-            <Lock className="w-10 h-10 mb-2" />
-            <p className="text-lg font-semibold text-center">Credit File Lock</p>
-          </Link>
-          <Link to="/DataBroker" className="bg-gradient-to-br from-green-400 to-green-600 text-white p-5 rounded-2xl flex flex-col justify-center items-center shadow-md hover:scale-105 transform transition duration-200">
-            <Database className="w-10 h-10 mb-2" />
-            <p className="text-lg font-semibold text-center">Data Broker Removal</p>
-          </Link>
-        </div>
-       
+
+            </div>
+          </div>
+
           {/* Tabs */}
           <div className="bg-white p-6 rounded-3xl shadow-sm">
             <DashboardTabs t={t} />
@@ -191,7 +233,6 @@ export default function Dashboard() {
             </p>
           </div>
         </div>
-       
       </div>
 
       {/* Modals */}

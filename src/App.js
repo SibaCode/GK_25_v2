@@ -11,6 +11,10 @@ import RegisterSimProtection from "./newPages/RegisterSimProtection";
 import AlertsPage from "./newPages/AlertsPage";
 import SimActivity from "./newPages/SimActivity";
 import HomePage from "./newPages/HomePage";
+import SimFraud from "./newPages/SimFraud";
+import DataBroker from "./newPages/DataBroker";
+import CreditLock from "./newPages/CreditLock";
+
 
 function App() {
   return (
@@ -31,6 +35,10 @@ function App() {
 
       {/* Alerts */}
       <Route path="/alerts" element={<AlertsPage />} />
+      <Route path="/SimFraud" element={<SimFraud />} />
+      <Route path="/DataBroker" element={<DataBroker />} />
+      <Route path="/CreditLock" element={<CreditLock />} />
+
 
       {/* Redirect unknown routes to home */}
       {/* <Route path="*" element={<Navigate to="/" />} /> */}

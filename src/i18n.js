@@ -34,6 +34,22 @@ const resources = {
       checkAccounts: "Check your linked accounts regularly.",
       updateRecovery: "Update your recovery number.",
       preferredLanguage: "Preferred Language",
+      welcome: "Welcome",
+      dashboardGreeting: "Stay protected and manage your data easily.",
+      simFraudAlert: "SIM Fraud Alert",
+      creditFileLock: "Credit File Lock",
+      creditFileLockInfo: "Lock your credit file to prevent unauthorized access and potential fraud. You can temporarily lock or permanently unlock your credit report as needed.",
+      whyLock: "Why Lock?",
+      whyLockInfo: "Protect your personal information and prevent fraudsters from opening accounts in your name.",
+      howItWorks: "How It Works",
+      howItWorksInfo: "When your credit file is locked, lenders cannot access it, stopping new credit accounts from being opened without your permission.",
+      dataBrokerRemoval: "Data Broker Removal",
+      dataBrokerInfo: "Request removal from data brokers to protect your privacy. This helps prevent unsolicited marketing and reduces exposure of your personal information.",
+      whyRemove: "Why Remove?",
+      whyRemoveInfo: "Data brokers collect and sell your information. Removing it reduces spam, marketing, and potential identity theft.",
+      howRemoveWorksInfo: "You submit a request to have your data removed from broker databases. It may take several days for the removal to take effect.",
+      forMoreTips: "For more tips, visit your",
+      alertsPage: "Alerts page",
     }
   },
   af: {
@@ -67,8 +83,23 @@ const resources = {
       neverShareOtp: "Moet nooit jou OTP of PIN deel nie.",
       checkAccounts: "Kontroleer jou gekoppelde rekeninge gereeld.",
       updateRecovery: "Werk jou herstelnommer op.",
-                preferredLanguage: "Voorkeurtaal"
-
+      preferredLanguage: "Voorkeurtaal",
+      welcome: "Welkom",
+      dashboardGreeting: "Bly beskerm en bestuur jou data maklik.",
+      simFraudAlert: "SIM Bedrog Waarskuwing",
+      creditFileLock: "Kredietlêer Slot",
+      creditFileLockInfo: "Slot jou kredietlêer om ongemagtigde toegang en moontlike bedrog te voorkom. Jy kan jou kredietverslag tydelik sluit of permanent ontsluit.",
+      whyLock: "Waarom Slot?",
+      whyLockInfo: "Beskerm jou persoonlike inligting en voorkom dat bedrieërs rekeninge in jou naam open.",
+      howItWorks: "Hoe Werk Dit",
+      howItWorksInfo: "Wanneer jou kredietlêer gesluit is, kan kredietverskaffers dit nie toegang nie, wat nuwe rekeninge stop sonder jou toestemming.",
+      dataBrokerRemoval: "Data Broker Verwydering",
+      dataBrokerInfo: "Versoek verwydering van data brokers om jou privaatheid te beskerm. Dit help om ongevraagde bemarking te voorkom en jou persoonlike inligting te beskerm.",
+      whyRemove: "Waarom Verwyder?",
+      whyRemoveInfo: "Data brokers versamel en verkoop jou inligting. Verwydering verminder spam, bemarking en moontlike identiteitsdiefstal.",
+      howRemoveWorksInfo: "Jy dien 'n versoek in om jou data van broker-databasisse te verwyder. Dit kan 'n paar dae neem om van krag te word.",
+      forMoreTips: "Vir meer wenke, besoek jou",
+      alertsPage: "Waarskuwingsblad",
     }
   },
   zu: {
@@ -102,7 +133,24 @@ const resources = {
       neverShareOtp: "Ungalokothi wabelane nge-OTP noma i-PIN yakho.",
       checkAccounts: "Hlola ama-akhawunti axhunyiwe njalo.",
       updateRecovery: "Vuselela inombolo yakho yokubuyisela.",
-      preferredLanguage: "Ulimi Oluthandayo"    }
+      preferredLanguage: "Ulimi Oluthandayo",
+      welcome: "Siyakwamukela",
+      dashboardGreeting: "Hlala uphephile futhi ulawule idatha yakho kalula.",
+      simFraudAlert: "ISIM Isexwayiso Sobuqili",
+      creditFileLock: "Vala Ifayela Lezikweletu",
+      creditFileLockInfo: "Vala ifayela lakho lezikweletu ukuvimbela ukufinyelela okungagunyaziwe nobugebengu. Ungalikhiya okwamanje noma ukhulule ngokuphelele njengokudingeka.",
+      whyLock: "Kungani Ukukhiya?",
+      whyLockInfo: "Vikela imininingwane yakho futhi uvimbele abakhohlisi ukuvula ama-akhawunti ngegama lakho.",
+      howItWorks: "Kusebenza Kanjani",
+      howItWorksInfo: "Lapho ifayela lakho lezikweletu likhiwe, abanikazi bezikweletu abakwazi ukufinyelela kulo, bavimbele ukuvula ama-akhawunti amasha ngaphandle kwemvume yakho.",
+      dataBrokerRemoval: "Susa i-Data Broker",
+      dataBrokerInfo: "Cela ukususwa kuma-data broker ukuvikela ubumfihlo bakho. Lokhu kusiza ukuvimbela ukumaketha okungafunwa nokunciphisa ukuvezwa kolwazi lwakho.",
+      whyRemove: "Kungani Ukususwa?",
+      whyRemoveInfo: "Ama-data broker aqoqa futhi adayise ulwazi lwakho. Ukususwa kwehlisa i-spam, ukumaketha, nokweba ubuwena okungenzeka.",
+      howRemoveWorksInfo: "Uhambisa isicelo sokususa ulwazi lwakho kuma-database wabrokers. Kungathatha izinsuku ezimbalwa ukuthi kusebenze.",
+      forMoreTips: "Ngeminye imihlahlandlela, vakashela",
+      alertsPage: "Ikhasi Lezixwayiso",
+    }
   },
   xh: {
     translation: {
@@ -135,7 +183,23 @@ const resources = {
       neverShareOtp: "Ungabelani nge-OTP okanye i-PIN yakho.",
       checkAccounts: "Jonga ii-akhawunti zakho ezinxulumene rhoqo.",
       updateRecovery: "Hlaziya inombolo yakho yokubuyisela.",
-       preferredLanguage: "Ulimi Oluthandwayo"
+      preferredLanguage: "Ulimi Oluthandwayo",
+      welcome: "Wamkelekile",
+      dashboardGreeting: "Hlala ukhuselekile kwaye ulawule idatha yakho ngokulula.",
+      simFraudAlert: "Isilumkiso se-SIM Fraud",
+      creditFileLock: "Vala Ifayile yeNgxelo yeZikweletu",
+      creditFileLockInfo: "Vala ifayile yakho yezikweletu ukuvimbela ukufikelela okungagunyaziwe kunye nobuqili. Ungalikhiya okwethutyana okanye ukhulule ngokusisigxina njengoko kudingeka.",
+      whyLock: "Kutheni Ukukhiya?",
+      whyLockInfo: "Khusela ulwazi lwakho kwaye uvimbele abakhohlisi ukuvula ii-akhawunti egameni lakho.",
+      howItWorks: "Kusebenza Kanjani",
+      howItWorksInfo: "Xa ifayile yakho yezikweletu ikhiwe, ababolekisi abanakufikelela kuyo, bavimba ukuvula ii-akhawunti ezintsha ngaphandle kwemvume yakho.",
+      dataBrokerRemoval: "Susa i-Data Broker",
+      dataBrokerInfo: "Cela ukususwa kwi-data brokers ukukhusela ubumfihlo bakho. Oku kunceda ukuthintela ukumaketha okungafunwanga kunye nokunciphisa ukuchazwa kolwazi lwakho.",
+      whyRemove: "Kutheni Ukususwa?",
+      whyRemoveInfo: "I-data brokers iqokelela kwaye ithengise ulwazi lwakho. Ukususa kunciphisa i-spam, ukumaketha, kunye nobuqili bokuzazisa okungenzeka.",
+      howRemoveWorksInfo: "Uthumela isicelo sokususa ulwazi lwakho kwi-database ye-brokers. Kungathatha iintsuku ezimbalwa ukuba kusebenze.",
+      forMoreTips: "Ngeminye imiyalelo, ndwendwela",
+      alertsPage: "Iphepha lezilumkiso",
     }
   },
   st: {
@@ -169,11 +233,26 @@ const resources = {
       neverShareOtp: "O se ke wa arolelana OTP kapa PIN ya hao.",
       checkAccounts: "Hlola diakhaonto tse amanang khafetsa.",
       updateRecovery: "Ntlafatsa nomoro ya hao ya ho fumana hape.",
-            preferredLanguage: "Puo e Khethiloeng"
+      preferredLanguage: "Puo e Khethiloeng",
+      welcome: "Rea u amohela",
+      dashboardGreeting: "Boloka polokeho 'me u laole data ea hau habonolo.",
+      simFraudAlert: "Tsebiso ea Bohata ea SIM",
+      creditFileLock: "Thibela Faele ea Mehloli ea Kredi",
+      creditFileLockInfo: "Thibela faele ea hau ea mokitlane ho thibela phihlello e sa lumelloang le bokhopo. U ka e thibela nakoana kapa ua e bula ka ho sa feleng ha ho hlokahala.",
+      whyLock: "Hobaneng U Thibela?",
+      whyLockInfo: "Sireletsa tlhahisoleseling ea hau 'me u thibetse bahlaseli ho bula liakhaonto ka lebitso la hau.",
+      howItWorks: "E sebetsa Joang",
+      howItWorksInfo: "Ha faele ea hau ea mokitlane e thibetsoe, barekisi ha ba khone ho e fihlella, ho thibela liakhaonto tse ncha ntle le tumello ea hau.",
+      dataBrokerRemoval: "Tlosa Data Broker",
+      dataBrokerInfo: "Kopa ho tlosa ho tsoa ho li-data broker ho sireletsa boinotši ba hau. Sena se thusa ho thibela ho bapatsa ho sa batleheng le ho fokotsa ho senya tlhahisoleseling ea hau.",
+      whyRemove: "Hobaneng U Tlosa?",
+      whyRemoveInfo: "Li-data broker li bokella 'me li rekise tlhahisoleseling ea hau. Ho tlosa ho fokotsa spam, ho bapatsa le bohlasoa ba boitsebiso bo ka bang teng.",
+      howRemoveWorksInfo: "O fana ka kopo ea ho tlosa data ea hau ho database ea broker. Ho ka nka matsatsi a 'maloa hore ho sebetse.",
+      forMoreTips: "Bakeng sa malebela a mang, etela",
+      alertsPage: "Leqephe la Tsebiso",
     }
   }
 };
-
 
 i18n
   .use(initReactI18next)
