@@ -1,6 +1,6 @@
 // src/newPages/Dashboard.js
 import React, { useState, useEffect } from "react";
-import { Plus, Bell, CreditCard, LogOut, Eye, HelpCircle, Menu, X, Lock, Database, FileText, AlertTriangle, Shield } from "lucide-react";
+import { Plus, Bell, CreditCard, LogOut, Eye, Clock, Menu, X, Lock, Database, FileText, AlertTriangle, Shield } from "lucide-react";
 import { Link } from "react-router-dom";
 import { auth, db } from "../firebase";
 import { signOut } from "firebase/auth";
@@ -11,9 +11,8 @@ import DashboardTabs from "./DashboardTabs";
 import RegisterSimProtectionModal from "./RegisterSimProtectionModal";
 import ViewSimProtectionModal from "./ViewSimProtectionModal";
 import EditSimProtectionModal from "./EditSimProtectionModal";
-import ViewAlertsModal from "./ViewAlertsModal";
 
-export default function SimFraud() {
+export default function Dashboard() {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isAlertModalOpen, setIsAlertModalOpen] = useState(false);
@@ -122,7 +121,7 @@ export default function SimFraud() {
       </button>
       <div>
         <h1 className="text-xl font-bold text-blue-600">SimSure</h1>
-        <p className="text-xs text-gray-500">FSP License #123456</p>
+        <p className="text-xs text-gray-500">FSP Licensce #123456</p>
       </div>
     </div>
     <div className="flex items-center gap-3">
@@ -144,7 +143,8 @@ export default function SimFraud() {
 
         {/* Sidebar */}
         <div className="lg:col-span-1 bg-white rounded-3xl shadow-md p-5 flex flex-col gap-6 overflow-auto max-h-[90vh]">
-  <div className="mb-6">
+          {/* Logo */}
+          <div className="mb-6">
             <h1 className="text-2xl font-bold text-blue-600">SimSure</h1>
             <p className="text-xs text-gray-500 mt-1">FSP License #123456</p>
           </div>
@@ -248,15 +248,16 @@ export default function SimFraud() {
 
               <span className="text-sm font-medium">{t("termsConditions")}</span>
             </button>
-             <Link to="/help" className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 transition text-gray-700">
-              <HelpCircle className="w-4 h-4 text-purple-600" />
-              <span className="text-sm">Help & Support</span>
-            </Link>
           </div>
 
 
           {/* Help / Logout */}
-       
+          <button 
+            onClick={() => setMobileMenuOpen(false)}
+            className="bg-gray-100 text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-200 transition text-sm font-medium flex items-center justify-center gap-2"
+          >
+            <span className="text-blue-500 font-bold">?</span> {t("help")}
+          </button>
           <button 
             onClick={handleLogout} 
             className="mt-auto flex items-center justify-center gap-2 bg-red-500 text-white px-4 py-2 rounded-xl hover:bg-red-600 transition duration-200 shadow-sm text-sm font-medium"
@@ -267,108 +268,119 @@ export default function SimFraud() {
 
 
 
+
+
+
         </div>
-
-        {/* Main Dashboard */}
-        <div className="lg:col-span-3 space-y-6 overflow-auto max-h-[90vh]">
-
-          {/* Register / View Alerts / Pre-Declare */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-            {/* <button
-              onClick={() => setOpenModal("registerSim")}
-              className="bg-gradient-to-br from-blue-500 to-blue-600 text-white p-6 rounded-2xl shadow-md hover:scale-105 transform transition duration-200"
-            >
-              <div className="flex items-center gap-3 mb-2">
-                <Bell className="w-8 h-8" />
-                <span className="text-lg font-semibold">Register SIM</span>
+<div className="lg:col-span-3 space-y-6 overflow-auto">
+          {/* Policy Overview */}
+          <div className="bg-white p-6 rounded-3xl shadow-md border-l-4 border-blue-500">
+            <div className="flex justify-between items-start">
+              <div>
+                <h2 className="text-xl font-bold text-gray-800">{t("yourProtectionPortfolio")}</h2>
+                <p className="text-gray-600 text-sm mt-1">Policy #POL-{currentUser.uid?.slice(-8).toUpperCase() || "ACTIVE"}</p>
+                <p className="text-gray-500 text-xs mt-2">{t("memberSince")}: {new Date(currentUser.createdAt?.toDate() || new Date()).toLocaleDateString()}</p>
               </div>
-              <p className="text-sm text-blue-100">Protect your SIM</p>
-            </button> */}
-            <div className="bg-blue-50 border border-blue-300 rounded-2xl p-6 flex flex-col justify-between">
-              <h3 className="text-lg font-bold text-gray-800 mb-2">Register SIM</h3>
-              <p className="text-gray-600 text-sm mb-4">
-                Manage SIM here
-              </p>
-              <div className="flex flex-col gap-2">
-                <button  onClick={() => setOpenModal("registerSim")} className="bg-blue-500 text-white py-3 rounded-lg font-semibold hover:bg-blue-600 transition">View Alerts</button>
-                {/* <button className="bg-blue-100 text-blue-700 border border-blue-500 py-3 rounded-lg font-semibold hover:bg-blue-200 transition">Travel / Country Move</button> */}
+              <div className="text-right">
+                <p className="text-2xl font-bold text-blue-600">{calculateCoverageTotal()}</p>
+                <p className="text-gray-500 text-sm">{t("totalCoverage")}</p>
+                <div className="flex items-center gap-2 mt-1">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span className="text-xs text-green-600">{activeServices}/3 {t("servicesActive")}</span>
+                </div>
               </div>
             </div>
-            {/* <button
-              onClick={() => setOpenModal("viewAlerts")}
-              className="bg-gradient-to-br from-red-500 to-red-600 text-white p-6 rounded-2xl shadow-md hover:scale-105 transform transition duration-200"
-            >
-              <div className="flex items-center gap-3 mb-2">
-                <AlertTriangle className="w-8 h-8" />
-                <span className="text-lg font-semibold">View Alerts</span>
+            {/* Coverage Cards */}
+            {/* <div className="grid grid-cols-3 gap-4 mt-4">
+              <div className="text-center p-3 bg-blue-50 rounded-lg">
+                <p className="font-semibold text-blue-700">${currentUser.simProtection?.coverage || 0}</p>
+                <p className="text-xs text-gray-600">{t("simProtection")}</p>
+                <div className={`w-3 h-3 rounded-full mx-auto mt-1 ${currentUser.simProtection?.active ? "bg-green-500" : "bg-red-500"}`}></div>
               </div>
-              <p className="text-sm text-red-100">See recent threats</p>
-            </button> */}
-            <div className="bg-red-50 border border-red-300 rounded-2xl p-6 flex flex-col justify-between">
-              <h3 className="text-lg font-bold text-gray-800 mb-2">Alerts</h3>
-              <p className="text-gray-600 text-sm mb-4">
-                View alerts here
-              </p>
-              <div className="flex flex-col gap-2">
-                <button  onClick={() => setOpenModal("viewAlerts")} className="bg-red-500 text-white py-3 rounded-lg font-semibold hover:bg-red-600 transition">View Alerts</button>
-                {/* <button className="bg-red-100 text-red-700 border border-red-500 py-3 rounded-lg font-semibold hover:bg-red-200 transition">Travel / Country Move</button> */}
+              <div className="text-center p-3 bg-purple-50 rounded-lg">
+                <p className="font-semibold text-purple-700">${currentUser.creditLockCoverage || 0}</p>
+                <p className="text-xs text-gray-600">{t("creditLock")}</p>
+                <div className={`w-3 h-3 rounded-full mx-auto mt-1 ${currentUser.creditLockActive ? "bg-green-500" : "bg-red-500"}`}></div>
               </div>
-            </div>
-             <div className="bg-yellow-50 border border-yellow-300 rounded-2xl p-6 flex flex-col justify-between">
-              <h3 className="text-lg font-bold text-gray-800 mb-2">Pre-Declare Changes</h3>
-              <p className="text-gray-600 text-sm mb-4">
-                {/* Notify us if you plan to swap your SIM or travel abroad. Prevent false alarms. */}
-              </p>
-              <div className="flex flex-col gap-2">
-                <button className="bg-yellow-500 text-white py-3 rounded-lg font-semibold hover:bg-yellow-600 transition">SIM Swap</button>
-                {/* <button className="bg-yellow-100 text-yellow-700 border border-yellow-500 py-3 rounded-lg font-semibold hover:bg-yellow-200 transition">Travel / Country Move</button> */}
-              </div>
-            </div>
-            {/* <div className="bg-yellow-50 border border-yellow-300 rounded-2xl p-6 flex flex-col justify-between">
-              <h3 className="text-lg font-bold text-gray-800 mb-2">Pre-Declare Changes</h3>
-              <p className="text-gray-600 text-sm mb-4">
-                Notify us if you plan to swap your SIM or travel abroad. Prevent false alarms.
-              </p>
-              <div className="flex flex-col gap-2">
-                <button className="bg-yellow-500 text-white py-3 rounded-lg font-semibold hover:bg-yellow-600 transition">SIM Swap</button>
-                <button className="bg-yellow-100 text-yellow-700 border border-yellow-500 py-3 rounded-lg font-semibold hover:bg-yellow-200 transition">Travel / Country Move</button>
+              <div className="text-center p-3 bg-green-50 rounded-lg">
+                <p className="font-semibold text-green-700">${currentUser.dataBrokerCoverage || 0}</p>
+                <p className="text-xs text-gray-600">{t("dataBroker")}</p>
+                <div className={`w-3 h-3 rounded-full mx-auto mt-1 ${currentUser.dataBrokerActive ? "bg-green-500" : "bg-red-500"}`}></div>
               </div>
             </div> */}
           </div>
 
-          {/* Current Protected Account */}
-          <div className="bg-white p-6 rounded-2xl shadow-md border-l-4 border-blue-500">
-            <h3 className="text-lg font-bold text-gray-800 mb-2">Current Protected Account</h3>
-            <p className="text-gray-600 text-sm">Policy #POL-{currentUser.uid?.slice(-8).toUpperCase() || "ACTIVE"}</p>
-            <p className="text-gray-600 text-sm mt-1">SIM Protection Active • $1M Coverage</p>
+          {/* Alerts Section */}
+          <div className="bg-white p-6 rounded-3xl shadow-md border-l-4 border-red-500">
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="text-lg font-bold text-red-800 flex items-center gap-2"><AlertTriangle className="w-5 h-5" />{t("emergencyResponse")}</h3>
+              <button className="text-sm text-blue-600 underline" onClick={() => setIsAlertModalOpen(true)}>{t("viewAlerts")}</button>
+            </div>
+            {alerts.length > 0 ? (
+              <ul className="list-disc list-inside text-gray-700">
+                {alerts.map((alert, i) => <li key={i}>{alert}</li>)}
+              </ul>
+            ) : <p className="text-gray-500 text-sm">{t("noActiveAlerts")}</p>}
           </div>
 
-          {/* Emergency Contacts */}
-          <div className="bg-red-50 border border-red-200 rounded-2xl p-6">
-            <h3 className="text-lg font-bold text-red-800 mb-2">Emergency Contacts</h3>
-            <p className="text-gray-600 text-sm mb-4">Call immediately if you suspect SIM theft or fraud.</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <button className="bg-red-600 text-white py-3 rounded-lg font-semibold hover:bg-red-700 transition">File Claim Now</button>
-              <button className="bg-white text-red-600 border border-red-600 py-3 rounded-lg font-semibold hover:bg-red-50 transition">Call: 1-800-XXX-XXXX</button>
+          {/* Security Score / Recommendations */}
+          <div className="bg-white p-6 rounded-3xl shadow-md border-l-4 border-blue-600">
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="text-lg font-bold text-blue-800 flex items-center gap-2"><Shield className="w-5 h-5" />{t("riskAssessment")}</h3>
+              <span className="text-sm text-gray-500">{t("securityScore")}: {securityScore}/100</span>
+            </div>
+            <p className="text-gray-700 text-sm">
+              {securityScore >= 80 ? t("recommendationExcellent") : t("recommendationImprove")}
+            </p>
+          </div>
+
+          {/* Tabs */}
+          <div className="bg-white p-6 rounded-3xl shadow-sm">
+            <DashboardTabs t={t} />
+          </div>
+
+          {/* Security Reminders */}
+          <div className="bg-white p-6 rounded-3xl shadow-sm text-gray-700">
+            <h2 className="text-lg font-bold mb-3">{t("securityReminders")}</h2>
+            <ul className="list-disc list-inside text-gray-600 space-y-1 text-sm">
+              <li>{t("neverShareOtp")}</li>
+              <li>{t("checkAccounts")}</li>
+              <li>{t("updateRecovery")}</li>
+            </ul>
+            <p className="text-sm mt-3">
+              {t("forMoreTips") || "For more tips, visit your"}{" "}
+              <Link to="/alerts" className="text-blue-600 font-medium hover:underline">{t("alertsPage") || "Alerts page"}</Link>.
+            </p>
+          </div>
+
+          {/* Regulatory Compliance Footer */}
+          <div className="bg-white p-4 rounded-2xl shadow-sm border">
+            <div className="flex flex-wrap items-center justify-between text-xs text-gray-500">
+              <div className="flex items-center gap-4">
+                <span>Underwritten by SimSure Insurance</span>
+                <span>•</span>
+                <span>FSP License #123456</span>
+                <span>•</span>
+                <span>{calculateCoverageTotal()} Total Coverage</span>
+              </div>
+              <div className="flex items-center gap-4 mt-2 sm:mt-0">
+                <button className="text-blue-600 hover:underline">Policy Documents</button>
+                <span>•</span>
+                <button className="text-blue-600 hover:underline">Terms & Conditions</button>
+              </div>
             </div>
           </div>
         </div>
+     
       </div>
- 
+
+    
 
       {/* Modals */}
       {isAlertModalOpen && <AlertHistoryModal onClose={() => setIsAlertModalOpen(false)} />}
       {openModal === "register" && <RegisterSimProtectionModal onClose={() => setOpenModal(null)} />}
       {openModal === "view" && <ViewSimProtectionModal onClose={() => setOpenModal(null)} />}
       {openModal === "edit" && <EditSimProtectionModal onClose={() => setOpenModal(null)} />}
-
-          {/* Modals */}
-              {openModal === "registerSim" && (
-                <RegisterSimProtectionModal isOpen={true} onClose={() => setOpenModal(null)} />
-              )}
-              {openModal === "viewAlerts" && (
-                <ViewAlertsModal isOpen={true} onClose={() => setOpenModal(null)} />
-              )}
     </div>
   );
 }

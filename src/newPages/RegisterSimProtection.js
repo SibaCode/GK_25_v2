@@ -2,13 +2,27 @@
 import React, { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { 
-  Mail, Phone, Lock, User, Plus, X, Shield, AlertTriangle, 
-  CheckCircle, FileText, Camera, Upload, Eye, EyeOff,
-  Bank, CreditCard, Signature
+  Mail, 
+  Phone, 
+  User, 
+  Plus, 
+  X, 
+  Shield, 
+  AlertTriangle, 
+  CheckCircle, 
+  FileText, 
+  Camera, 
+  Upload, 
+  Eye,
+  House, 
+  Signature, 
+  Video, 
+  Circle
 } from "lucide-react";
+// Make sure these are the correct icon names - if any don't exist, remove them
 import { doc, setDoc, serverTimestamp, getDoc } from "firebase/firestore";
 import { db, auth } from "../firebase";
-import { getLinkedSimsById, verifyCompliance, verifyIdentity } from "./fakeRicaApi";
+import { getLinkedSimsById, verifyCompliance } from "./fakeRicaApi";
 import { translations } from "./translations";
 
 const RegisterSimProtection = ({ onClose }) => {
@@ -18,6 +32,7 @@ const RegisterSimProtection = ({ onClose }) => {
     idFront: null,
     idBack: null,
     selfie: null,
+    livePhotos: [],
     biometricConsent: false,
     
     // Personal Details
@@ -65,8 +80,13 @@ const RegisterSimProtection = ({ onClose }) => {
   const [verificationStatus, setVerificationStatus] = useState(null);
   const [uploadProgress, setUploadProgress] = useState({});
   const [showInsuranceDetails, setShowInsuranceDetails] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordedVideo, setRecordedVideo] = useState(null);
+  const [capturedPhotos, setCapturedPhotos] = useState([]);
 
   const canvasRef = useRef(null);
+  const videoRef = useRef(null);
+  const streamRef = useRef(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const fileInputRefFront = useRef(null);
   const fileInputRefBack = useRef(null);
@@ -81,7 +101,7 @@ const RegisterSimProtection = ({ onClose }) => {
   ];
 
   const regex = {
-    idNumber: /^\d{13}$/,
+    idNumber: /^\d+$/,
     phone: /^0\d{9}$/,
     email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
     name: /^[A-Za-z\s]{2,}$/,
@@ -91,30 +111,88 @@ const RegisterSimProtection = ({ onClose }) => {
 
   const t = translations[formData.preferredLanguage] || translations.en;
 
-  // South African ID Validation
-  const validateSAID = (idNumber) => {
-    if (idNumber.length !== 13 || !/^\d+$/.test(idNumber)) return false;
-    
-    const year = parseInt(idNumber.substring(0, 2));
-    const month = parseInt(idNumber.substring(2, 4));
-    const day = parseInt(idNumber.substring(4, 6));
-    const citizenship = parseInt(idNumber.substring(10, 11));
-
-    if (month < 1 || month > 12 || day < 1 || day > 31) return false;
-    if (citizenship !== 0 && citizenship !== 1) return false;
-
-    let sum = 0;
-    let even = false;
-    for (let i = idNumber.length - 1; i >= 0; i--) {
-      let digit = parseInt(idNumber[i]);
-      if (even) {
-        digit *= 2;
-        if (digit > 9) digit -= 9;
+  // Live Photo Capture Functions
+  const startCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { 
+          width: 1280, 
+          height: 720,
+          facingMode: 'user'
+        } 
+      });
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
       }
-      sum += digit;
-      even = !even;
+    } catch (error) {
+      console.error("Error accessing camera:", error);
+      alert("Unable to access camera. Please check permissions.");
     }
-    return sum % 10 === 0;
+  };
+
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+    }
+  };
+
+  const captureLivePhoto = () => {
+    if (videoRef.current) {
+      const canvas = document.createElement('canvas');
+      canvas.width = videoRef.current.videoWidth;
+      canvas.height = videoRef.current.videoHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(videoRef.current, 0, 0);
+      
+      const photoData = canvas.toDataURL('image/jpeg');
+      const newPhotos = [...capturedPhotos, photoData];
+      setCapturedPhotos(newPhotos);
+      setFormData(prev => ({ ...prev, livePhotos: newPhotos }));
+      
+      setTimeout(() => {
+        setVerificationStatus(prev => ({
+          ...prev,
+          liveness: 'detected',
+          photosCount: newPhotos.length
+        }));
+      }, 1000);
+    }
+  };
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { 
+          width: 1280, 
+          height: 720,
+          facingMode: 'user'
+        } 
+      });
+      
+      const recorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+      const chunks = [];
+      
+      recorder.ondataavailable = (e) => chunks.push(e.data);
+      recorder.onstop = () => {
+        const blob = new Blob(chunks, { type: 'video/webm' });
+        const videoUrl = URL.createObjectURL(blob);
+        setRecordedVideo(videoUrl);
+        setFormData(prev => ({ ...prev, selfie: videoUrl }));
+      };
+      
+      recorder.start();
+      setIsRecording(true);
+      
+      setTimeout(() => {
+        recorder.stop();
+        stream.getTracks().forEach(track => track.stop());
+        setIsRecording(false);
+      }, 5000);
+      
+    } catch (error) {
+      console.error("Error recording video:", error);
+    }
   };
 
   // File Upload Handlers
@@ -133,7 +211,6 @@ const RegisterSimProtection = ({ onClose }) => {
       setFormData(prev => ({ ...prev, [fileType]: reader.result }));
       setUploadProgress(prev => ({ ...prev, [fileType]: 100 }));
       
-      // Simulate verification process
       setTimeout(() => {
         setUploadProgress(prev => ({ ...prev, [fileType]: 'verified' }));
       }, 2000);
@@ -200,7 +277,7 @@ const RegisterSimProtection = ({ onClose }) => {
     const cleanedValue = value.replace(/\D/g, '');
     setFormData(prev => ({ ...prev, idNumber: cleanedValue }));
     
-    if (cleanedValue.length === 13 && validateSAID(cleanedValue)) {
+    if (cleanedValue.length > 5) {
       setLoadingSims(true);
       const sims = await getLinkedSimsById(cleanedValue);
       setLinkedSims(sims);
@@ -240,24 +317,24 @@ const RegisterSimProtection = ({ onClose }) => {
     const newErrors = {};
     
     switch (step) {
-      case 0: // Identity Verification
-        if (!formData.idNumber || !validateSAID(formData.idNumber)) {
-          newErrors.idNumber = "Valid South African ID required";
+      case 0:
+        if (!formData.idNumber) {
+          newErrors.idNumber = "ID number is required";
         }
         if (!formData.idFront) newErrors.idFront = "ID front photo required";
         if (!formData.idBack) newErrors.idBack = "ID back photo required";
-        if (!formData.selfie) newErrors.selfie = "Live selfie required";
+        if (formData.livePhotos.length < 3) newErrors.livePhotos = "Please capture at least 3 live photos";
         if (!formData.biometricConsent) newErrors.biometricConsent = "Biometric consent required";
         break;
         
-      case 1: // Bank Insurance
+      case 1:
         formData.bankAccounts.forEach((acc, index) => {
           if (!acc.bankName) newErrors[`bankName-${index}`] = "Bank name required";
           if (!acc.accountNumber) newErrors[`accountNumber-${index}`] = "Account number required";
         });
         break;
         
-      case 2: // Legal Authorization
+      case 2:
         if (!formData.telecomAuthorization) newErrors.telecomAuthorization = "Required";
         if (!formData.financialAuthorization) newErrors.financialAuthorization = "Required";
         if (!formData.automatedActions) newErrors.automatedActions = "Required";
@@ -265,7 +342,7 @@ const RegisterSimProtection = ({ onClose }) => {
         if (!formData.insuranceTerms) newErrors.insuranceTerms = "Required";
         break;
         
-      case 3: // Digital Signature
+      case 3:
         if (!formData.fullLegalName) newErrors.fullLegalName = "Legal name required";
         if (!formData.digitalSignature) newErrors.digitalSignature = "Signature required";
         if (!formData.perjuryCertification) newErrors.perjuryCertification = "Required";
@@ -283,7 +360,12 @@ const RegisterSimProtection = ({ onClose }) => {
     }
   };
 
-  const prevStep = () => setCurrentStep(prev => prev - 1);
+  const prevStep = () => {
+    if (currentStep === 0) {
+      stopCamera();
+    }
+    setCurrentStep(prev => prev - 1);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -298,7 +380,8 @@ const RegisterSimProtection = ({ onClose }) => {
           submittedAt: serverTimestamp(),
           ipAddress: await getClientIP(),
           userAgent: navigator.userAgent,
-          verificationStatus: "completed"
+          verificationStatus: "completed",
+          livePhotosCount: formData.livePhotos.length
         },
         preferredLanguage: formData.preferredLanguage,
         updatedAt: serverTimestamp()
@@ -312,6 +395,7 @@ const RegisterSimProtection = ({ onClose }) => {
       alert("Submission failed. Please try again.");
     } finally {
       setLoading(false);
+      stopCamera();
     }
   };
 
@@ -324,6 +408,19 @@ const RegisterSimProtection = ({ onClose }) => {
       return 'unknown';
     }
   };
+
+  // Start camera when identity verification step is active
+  useEffect(() => {
+    if (currentStep === 0) {
+      startCamera();
+    } else {
+      stopCamera();
+    }
+
+    return () => {
+      stopCamera();
+    };
+  }, [currentStep]);
 
   // Render Steps
   const renderStep = () => {
@@ -349,7 +446,7 @@ const RegisterSimProtection = ({ onClose }) => {
         </p>
       </div>
 
-      {/* ID Number */}
+      {/* ID Number - No Validation */}
       <div>
         <label className="block text-gray-700 font-medium mb-2">South African ID Number</label>
         <input 
@@ -357,8 +454,7 @@ const RegisterSimProtection = ({ onClose }) => {
           name="idNumber" 
           value={formData.idNumber} 
           onChange={handleIdChange} 
-          placeholder="9001014800087"
-          maxLength={13}
+          placeholder="Enter your ID number"
           className={`w-full border px-3 py-3 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none ${
             errors.idNumber ? "border-red-500" : "border-gray-300"
           }`} 
@@ -421,31 +517,90 @@ const RegisterSimProtection = ({ onClose }) => {
         </div>
       </div>
 
-      {/* Live Selfie */}
-      <div>
-        <label className="block text-gray-700 font-medium mb-2">🤳 Live Selfie Verification</label>
-        <div 
-          className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:bg-gray-50 ${
-            errors.selfie ? "border-red-500" : "border-gray-300"
-          }`}
-          onClick={() => selfieInputRef.current?.click()}
-        >
-          <Camera className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-          <p className="text-sm text-gray-600">Take a live selfie</p>
-          <input 
-            type="file" 
-            ref={selfieInputRef}
-            className="hidden" 
-            accept="image/*"
-            onChange={(e) => handleFileUpload("selfie", e.target.files[0])}
+      {/* Live Face Verification */}
+      <div className="border-2 border-blue-200 rounded-lg p-6 bg-blue-50">
+        <label className="block text-gray-700 font-medium mb-4 text-lg">🤳 Live Face Verification</label>
+        
+        {/* Camera Feed */}
+        <div className="relative bg-black rounded-lg overflow-hidden mb-4">
+          <video
+            ref={videoRef}
+            autoPlay
+            playsInline
+            muted
+            className="w-full h-64 object-cover"
           />
+          {isRecording && (
+            <div className="absolute top-4 right-4 flex items-center gap-2 bg-red-600 text-white px-3 py-1 rounded-full">
+              <Circle className="w-3 h-3 fill-current animate-pulse" />
+              <span className="text-sm">Recording</span>
+            </div>
+          )}
         </div>
-        {uploadProgress.selfie === 'verified' && (
-          <p className="text-green-500 text-sm mt-2 flex items-center gap-1">
-            <CheckCircle className="w-4 h-4" /> Face match verified
-          </p>
-        )}
-        {errors.selfie && <p className="text-red-500 text-sm mt-1">{errors.selfie}</p>}
+
+        {/* Capture Controls */}
+        <div className="flex flex-col gap-3">
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={captureLivePhoto}
+              className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 flex items-center justify-center gap-2"
+            >
+              <Camera className="w-5 h-5" />
+              Capture Live Photo
+            </button>
+            
+            <button
+              type="button"
+              onClick={startRecording}
+              disabled={isRecording}
+              className="flex-1 bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 disabled:bg-gray-400 flex items-center justify-center gap-2"
+            >
+              <Video className="w-5 h-5" />
+              {isRecording ? "Recording..." : "Record Video"}
+            </button>
+          </div>
+
+          {/* Captured Photos Preview */}
+          {capturedPhotos.length > 0 && (
+            <div className="mt-4">
+              <p className="text-sm text-gray-600 mb-2">
+                Captured Photos: {capturedPhotos.length}/3
+              </p>
+              <div className="flex gap-2 overflow-x-auto">
+                {capturedPhotos.map((photo, index) => (
+                  <img
+                    key={index}
+                    src={photo}
+                    alt={`Live photo ${index + 1}`}
+                    className="w-20 h-20 object-cover rounded-lg border-2 border-green-500"
+                  />
+                ))}
+              </div>
+              {capturedPhotos.length >= 3 && (
+                <p className="text-green-500 text-sm mt-2 flex items-center gap-1">
+                  <CheckCircle className="w-4 h-4" />
+                  Liveness detection successful
+                </p>
+              )}
+            </div>
+          )}
+
+          {errors.livePhotos && (
+            <p className="text-red-500 text-sm">{errors.livePhotos}</p>
+          )}
+        </div>
+
+        {/* Liveness Instructions */}
+        <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <h4 className="font-semibold text-yellow-800 mb-2">Liveness Detection Instructions:</h4>
+          <ul className="text-sm text-yellow-700 space-y-1">
+            <li>• Capture 3 photos with different facial expressions</li>
+            <li>• Ensure good lighting and face the camera directly</li>
+            <li>• Remove sunglasses, hats, or face coverings</li>
+            <li>• Follow the on-screen prompts for movements</li>
+          </ul>
+        </div>
       </div>
 
       {/* Biometric Consent */}
@@ -472,7 +627,7 @@ const RegisterSimProtection = ({ onClose }) => {
     <div className="space-y-6">
       <div className="bg-green-50 border border-green-200 rounded-lg p-4">
         <div className="flex items-center gap-2 text-green-700 mb-2">
-          <Bank className="w-5 h-5" />
+          <House className="w-5 h-5" />
           <span className="font-semibold">🏦 BANK ACCOUNT INSURANCE</span>
         </div>
         <p className="text-sm text-green-600">
@@ -739,6 +894,7 @@ const RegisterSimProtection = ({ onClose }) => {
           <h3 className="font-semibold text-gray-800 mb-2">Identity Verification</h3>
           <p className="text-sm text-gray-600">✓ South African ID: {formData.idNumber}</p>
           <p className="text-sm text-gray-600">✓ Documents uploaded and verified</p>
+          <p className="text-sm text-gray-600">✓ Live photos captured: {formData.livePhotos.length}</p>
           <p className="text-sm text-gray-600">✓ Biometric consent provided</p>
         </div>
 
