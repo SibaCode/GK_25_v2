@@ -1,168 +1,192 @@
+// src/newPages/Dashboard.js
 import React, { useState, useEffect } from "react";
+import {
+    Bell,
+    LogOut,
+    Menu,
+    X,
+    Shield,
+    Lock,
+    Zap,
+    CheckCircle,
+    Smartphone
+} from "lucide-react";
 import { auth, db } from "../firebase";
 import { signOut } from "firebase/auth";
-import { doc, getDoc, onSnapshot, updateDoc } from "firebase/firestore";
-import { LogOut, CreditCard, Bell, Clock, Eye } from "lucide-react";
-import { useTranslation } from "react-i18next";
-import RegisterSimProtectionModal from "./RegisterSimProtectionModal";
-import ViewSimProtectionModal from "./ViewSimProtectionModal";
-import EditSimProtectionModal from "./EditSimProtectionModal";
+import { doc, onSnapshot } from "firebase/firestore";
 import AlertHistoryModal from "./AlertHistoryModal";
-import DashboardTabs from "./DashboardTabs";
+import RegisterSimProtectionModal from "./RegisterSimProtectionModal";
 
 export default function Dashboard() {
     const [currentUser, setCurrentUser] = useState(null);
     const [loading, setLoading] = useState(true);
     const [isAlertModalOpen, setIsAlertModalOpen] = useState(false);
-    const [openModal, setOpenModal] = useState(null);
-    const { t, i18n } = useTranslation();
+    const [openModal, setOpenModal] = useState(null); // "register" | "view" | "edit" | "alerts"
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-    const refreshCurrentUser = async () => {
-        if (!auth.currentUser) return;
-        const docSnap = await getDoc(doc(db, "users", auth.currentUser.uid));
-        if (docSnap.exists()) setCurrentUser(docSnap.data());
+    const fetchCurrentUser = (userId) => {
+        const docRef = doc(db, "users", userId);
+        return onSnapshot(docRef, (docSnap) => {
+            if (docSnap.exists()) setCurrentUser(docSnap.data());
+            setLoading(false);
+        });
     };
 
     useEffect(() => {
         const unsubscribeAuth = auth.onAuthStateChanged((user) => {
             if (user) {
-                const docRef = doc(db, "users", user.uid);
-                const unsubscribeSnapshot = onSnapshot(docRef, (docSnap) => {
-                    if (docSnap.exists()) setCurrentUser(docSnap.data());
-                    setLoading(false);
-                });
+                const unsubscribeSnapshot = fetchCurrentUser(user.uid);
                 return () => unsubscribeSnapshot();
-            } else setLoading(false);
+            } else {
+                setLoading(false);
+            }
         });
         return () => unsubscribeAuth();
     }, []);
-
-    useEffect(() => {
-        if (currentUser?.preferredLanguage) {
-            i18n.changeLanguage(currentUser.preferredLanguage);
-        }
-    }, [currentUser, i18n]);
 
     const handleLogout = async () => {
         try {
             await signOut(auth);
             window.location.href = "/login";
         } catch (error) {
-            console.error(error);
-            alert(t("logoutFailed") || "Failed to logout. Try again.");
+            console.error("Logout failed:", error);
+            alert("Logout failed. Please try again.");
         }
     };
 
-    const handleLanguageChange = async (newLang) => {
-        i18n.changeLanguage(newLang);
-        if (auth.currentUser) {
-            const docRef = doc(db, "users", auth.currentUser.uid);
-            await updateDoc(docRef, { preferredLanguage: newLang });
-            setCurrentUser({ ...currentUser, preferredLanguage: newLang });
-        }
-    };
+    const handleManageSim = () => setOpenModal("register");
+    const handleViewAlerts = () => setOpenModal("alerts");
 
-    if (loading) return <p className="text-center mt-10">{t("loadingUser")}</p>;
-    if (!currentUser) return <p className="text-center mt-10">{t("noUser")}</p>;
+    if (loading) return (
+        <div className="min-h-screen bg-white flex items-center justify-center">
+            <div className="flex flex-col items-center gap-4">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                <p className="text-gray-600">Loading your dashboard...</p>
+            </div>
+        </div>
+    );
 
-    const alerts = currentUser.simProtection?.activeAlertsArray || [];
+    if (!currentUser) return (
+        <div className="min-h-screen bg-white flex items-center justify-center">
+            <p className="text-gray-600">No user data found.</p>
+        </div>
+    );
+
+    const activeAlerts = currentUser.activeAlertsArray || [];
+    const protectedSIM = currentUser.simProtection?.simNumber ? 1 : 0;
 
     return (
-        <div className="min-h-screen bg-gray-100">
-            <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-6 p-4">
-                {/* Sidebar */}
-                <div className="lg:col-span-1 bg-white rounded-3xl shadow-md p-5 flex flex-col gap-6 overflow-auto max-h-[90vh]">
-                    {/* Profile */}
-                    <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 rounded-full bg-gradient-to-tr from-blue-200 to-blue-400 flex items-center justify-center text-blue-600 font-bold text-lg shadow">
-                            {currentUser.fullName
-                                ?.split(" ")
-                                .map((n) => n[0])
-                                .join("") || "U"}
-                        </div>
-                        <div className="flex flex-col justify-center truncate">
-                            <h2 className="font-semibold">{currentUser.fullName}</h2>
-                            <p className="text-xs text-gray-500 truncate">{currentUser.email}</p>
-                            <p className="text-xs text-gray-500">{currentUser.phone}</p>
-                        </div>
-                    </div>
-
-                    {/* Language Selector */}
-                    <div className="flex flex-col gap-1">
-                        <label className="text-sm font-semibold">{t("preferredLanguage")}</label>
-                        <select
-                            value={currentUser.preferredLanguage || "en"}
-                            onChange={(e) => handleLanguageChange(e.target.value)}
-                            className="border border-gray-300 rounded-md p-2 text-sm"
+        <div className="min-h-screen bg-gray-50">
+            {/* Mobile Header */}
+            <div className="lg:hidden bg-white shadow-sm border-b p-4 sticky top-0 z-50">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                            className="p-2 rounded-lg hover:bg-gray-100 transition"
                         >
-                            <option value="en">English</option>
-                            <option value="af">Afrikaans</option>
-                            <option value="zu">Zulu</option>
-                            <option value="xh">Xhosa</option>
-                        </select>
+                            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                        </button>
+                        <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                                <Shield className="w-4 h-4 text-white" />
+                            </div>
+                            <div>
+                                <h1 className="text-lg font-bold text-gray-900">SimSure</h1>
+                                <p className="text-xs text-gray-500">FSP License #123456</p>
+                            </div>
+                        </div>
+                    </div>
+                    <button
+                        onClick={handleViewAlerts}
+                        className="relative p-2 rounded-lg hover:bg-gray-100 transition"
+                    >
+                        <Bell className="w-5 h-5 text-gray-600" />
+                    </button>
+                </div>
+            </div>
+
+            <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-6 p-4 lg:p-6">
+                {/* Sidebar */}
+                <div className="lg:col-span-1 bg-white rounded-xl shadow-sm p-6 flex flex-col gap-6 border border-gray-200">
+                    <div className="flex items-center gap-3 mb-2">
+                        <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">
+                            <Shield className="w-5 h-5 text-white" />
+                        </div>
+                        <div>
+                            <h1 className="text-xl font-bold text-gray-900">SimSure</h1>
+                            <p className="text-xs text-gray-500">FSP License #123456</p>
+                        </div>
                     </div>
 
-                    {/* Logout */}
+                    <nav className="space-y-2">
+                        <button onClick={handleManageSim} className="flex items-center gap-3 p-3 rounded-lg hover:bg-blue-100 text-blue-700 transition font-medium w-full">
+                            <Bell className="w-5 h-5" />
+                            SIM Swap Alerts
+                        </button>
+                        <button className="flex items-center gap-3 p-3 rounded-lg hover:bg-green-100 text-green-700 transition font-medium w-full">
+                            <Lock className="w-5 h-5" />
+                            Credit File Lock
+                        </button>
+                        <button className="flex items-center gap-3 p-3 rounded-lg hover:bg-purple-100 text-purple-700 transition font-medium w-full">
+                            <Zap className="w-5 h-5" />
+                            Data Removal Services
+                        </button>
+                    </nav>
+
                     <button
                         onClick={handleLogout}
-                        className="mt-auto flex items-center justify-center gap-2 bg-red-500 text-white px-4 py-2 rounded-xl"
+                        className="mt-auto flex items-center justify-center gap-2 bg-gray-100 text-gray-700 px-4 py-3 rounded-lg hover:bg-gray-200 transition font-medium"
                     >
-                        <LogOut className="w-4 h-4" /> {t("logout")}
+                        <LogOut className="w-4 h-4" /> Sign Out
                     </button>
                 </div>
 
-                {/* Main Dashboard */}
-                <div className="lg:col-span-3 space-y-6 overflow-auto max-h-[90vh]">
-                    <div className="bg-white p-6 rounded-3xl shadow-lg">
-                        <h2 className="text-xl font-bold mb-5">{t("yourDataSummary")}</h2>
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                            <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white p-5 rounded-2xl flex flex-col justify-between shadow-md">
-                                <CreditCard className="w-8 h-8 mb-2" />
-                                <p>{t("totalSims")}</p>
-                                <p className="text-3xl font-bold mt-1">
-                                    {currentUser.simProtection?.selectedNumber ? 1 : 0}
-                                </p>
-                                <div className="flex flex-col gap-2 mt-3">
-                                    {currentUser.simProtection?.selectedNumber && (
-                                        <button onClick={() => setOpenModal("view")} className="btn">
-                                            Manage SIM
-                                        </button>
-                                    )}
-                                    <button onClick={() => setOpenModal("register")} className="btn">
-                                        Register SIM
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div className="relative bg-gradient-to-br from-red-500 to-red-600 text-white p-5 rounded-2xl flex flex-col justify-between shadow-md">
-                                <Bell className="w-8 h-8 mb-2" />
-                                <p>{t("activeAlerts")}</p>
-                                <p className="text-3xl font-bold mt-1">{alerts.length}</p>
-                                <button
-                                    onClick={() => setIsAlertModalOpen(true)}
-                                    className="mt-3 bg-white text-red-600 px-3 py-1 rounded-lg text-sm font-medium flex items-center gap-1 relative"
-                                >
-                                    <Eye className="w-4 h-4" /> {t("viewAlerts")}
-                                    {alerts.length > 0 && (
-                                        <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
-                                            {alerts.length}
-                                        </span>
-                                    )}
-                                </button>
-                            </div>
-
-                            <div className="bg-gray-200 text-gray-800 p-5 rounded-2xl flex flex-col justify-center text-center shadow-sm">
-                                <Clock className="w-8 h-8 mb-2" />
-                                <p>{t("lastUpdated")}</p>
-                                <p className="text-2xl font-semibold mt-1">
-                                    {new Date().toLocaleString()}
-                                </p>
-                            </div>
+                {/* Main Content */}
+                <div className="lg:col-span-3 space-y-6">
+                    {/* Welcome Header */}
+                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex justify-between items-center">
+                        <div>
+                            <h1 className="text-2xl font-bold text-gray-900">
+                                Welcome back, {currentUser.firstName || currentUser.fullName?.split(" ")[0] || "User"}!
+                            </h1>
+                            <p className="text-gray-600 mt-1">Policy #POL-{currentUser.uid?.slice(-8).toUpperCase() || "ACTIVE"}</p>
                         </div>
+                        <CheckCircle className="w-10 h-10 text-green-600 animate-pulse" />
                     </div>
 
-                    <div className="bg-white p-6 rounded-3xl shadow-sm">
-                        <DashboardTabs t={t} />
+                    {/* Top Cards */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="bg-gradient-to-r from-green-100 to-green-300 shadow-lg rounded-lg p-5 hover:scale-105 transform transition cursor-pointer">
+                            <div className="flex justify-between items-center mb-2">
+                                <h3 className="text-sm font-medium text-gray-600">Protected SIMs</h3>
+                                <Smartphone className="w-6 h-6 text-green-700" />
+                            </div>
+                            <p className="text-2xl font-bold text-gray-900">{protectedSIM}</p>
+                            <button onClick={handleManageSim} className="mt-3 text-sm text-green-800 font-medium hover:underline flex items-center gap-1">
+                                Manage SIM <Shield className="w-4 h-4" />
+                            </button>
+                        </div>
+
+                        <div className="bg-gradient-to-r from-blue-100 to-blue-300 shadow-lg rounded-lg p-5 hover:scale-105 transform transition cursor-pointer">
+                            <div className="flex justify-between items-center mb-2">
+                                <h3 className="text-sm font-medium text-gray-600">Active Alerts</h3>
+                                <Bell className="w-6 h-6 text-blue-700" />
+                            </div>
+                            <p className="text-2xl font-bold text-gray-900">{activeAlerts.length}</p>
+                            <button onClick={handleViewAlerts} className="mt-3 text-sm text-blue-800 font-medium hover:underline flex items-center gap-1">
+                                View Alerts <Bell className="w-4 h-4" />
+                            </button>
+                        </div>
+
+                        <div className="bg-gradient-to-r from-purple-100 to-purple-300 shadow-lg rounded-lg p-5 hover:scale-105 transform transition cursor-pointer">
+                            <div className="flex justify-between items-center mb-2">
+                                <h3 className="text-sm font-medium text-gray-600">Security Score</h3>
+                                <Shield className="w-6 h-6 text-purple-700" />
+                            </div>
+                            <p className="text-2xl font-bold text-gray-900">100%</p>
+                            <p className="text-purple-700 text-sm mt-1">Excellent</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -173,31 +197,23 @@ export default function Dashboard() {
                     isOpen={true}
                     onClose={() => {
                         setOpenModal(null);
-                        refreshCurrentUser();
+                        // refresh current user data
+                        if (auth.currentUser) {
+                            const docRef = doc(db, "users", auth.currentUser.uid);
+                            onSnapshot(docRef, (docSnap) => {
+                                if (docSnap.exists()) setCurrentUser(docSnap.data());
+                            });
+                        }
                     }}
                 />
             )}
 
-            {openModal === "view" && (
-                <ViewSimProtectionModal
-                    data={currentUser.simProtection}
-                    onEdit={() => setOpenModal("edit")}
-                    onClose={() => setOpenModal(null)}
+            {isAlertModalOpen && (
+                <AlertHistoryModal
+                    onClose={() => setIsAlertModalOpen(false)}
+                    userData={currentUser}
                 />
             )}
-
-            {openModal === "edit" && (
-                <EditSimProtectionModal
-                    data={currentUser.simProtection}
-                    onClose={() => setOpenModal(null)}
-                />
-            )}
-
-            <AlertHistoryModal
-                isOpen={isAlertModalOpen}
-                onClose={() => setIsAlertModalOpen(false)}
-                alerts={alerts}
-            />
         </div>
     );
 }

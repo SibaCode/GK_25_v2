@@ -1,8 +1,8 @@
-// src/pages/RegisterSimProtection.js
+// src/newPages/RegisterSimProtection.js
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, ArrowRight, Loader2, CheckCircle2 } from "lucide-react";
-import { doc, setDoc, serverTimestamp, getDoc } from "firebase/firestore";
+import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "../firebase";
 
 export default function RegisterSimProtection({ onClose }) {
@@ -10,6 +10,7 @@ export default function RegisterSimProtection({ onClose }) {
     const [loading, setLoading] = useState(false);
     const [errors, setErrors] = useState({});
     const [savingStep, setSavingStep] = useState(false);
+
     const canvasRef = useRef(null);
     const ctxRef = useRef(null);
     const drawing = useRef(false);
@@ -60,27 +61,29 @@ export default function RegisterSimProtection({ onClose }) {
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
-        setForm(prev => ({
-            ...prev,
-            [name]: type === "checkbox" ? checked : value
-        }));
-        setErrors(prev => ({ ...prev, [name]: "" }));
+        if (name.startsWith("authorizations.")) {
+            const key = name.split(".")[1];
+            setForm((prev) => ({ ...prev, authorizations: { ...prev.authorizations, [key]: checked } }));
+        } else {
+            setForm((prev) => ({ ...prev, [name]: type === "checkbox" ? checked : value }));
+        }
+        setErrors((prev) => ({ ...prev, [name]: "" }));
     };
 
     const handleArrayChange = (e, arrayName, index, field) => {
         const newArray = [...form[arrayName]];
         newArray[index][field] = e.target.value;
-        setForm(prev => ({ ...prev, [arrayName]: newArray }));
+        setForm((prev) => ({ ...prev, [arrayName]: newArray }));
     };
 
     const addArrayItem = (arrayName, itemTemplate) => {
-        setForm(prev => ({ ...prev, [arrayName]: [...prev[arrayName], itemTemplate] }));
+        setForm((prev) => ({ ...prev, [arrayName]: [...prev[arrayName], itemTemplate] }));
     };
 
     const removeArrayItem = (arrayName, index) => {
         const newArray = [...form[arrayName]];
         newArray.splice(index, 1);
-        setForm(prev => ({ ...prev, [arrayName]: newArray }));
+        setForm((prev) => ({ ...prev, [arrayName]: newArray }));
     };
 
     const startDrawing = (e) => {
@@ -109,14 +112,13 @@ export default function RegisterSimProtection({ onClose }) {
         drawing.current = false;
         if (!canvasRef.current) return;
         const dataUrl = canvasRef.current.toDataURL("image/png");
-        setForm(prev => ({ ...prev, signatureDataUrl: dataUrl }));
+        setForm((prev) => ({ ...prev, signatureDataUrl: dataUrl }));
     };
 
     const clearSignature = () => {
         if (!ctxRef.current || !canvasRef.current) return;
-        const ctx = ctxRef.current;
-        ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-        setForm(prev => ({ ...prev, signatureDataUrl: null }));
+        ctxRef.current.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+        setForm((prev) => ({ ...prev, signatureDataUrl: null }));
     };
 
     const validateStep = () => {
@@ -150,11 +152,15 @@ export default function RegisterSimProtection({ onClose }) {
         if (!auth.currentUser) return;
         setSavingStep(true);
         try {
-            await setDoc(doc(db, "users", auth.currentUser.uid), {
-                simProtection: form,
-                lastSavedStep: currentStep,
-                updatedAt: serverTimestamp()
-            }, { merge: true });
+            await setDoc(
+                doc(db, "users", auth.currentUser.uid),
+                {
+                    simProtection: form,
+                    lastSavedStep: currentStep,
+                    updatedAt: serverTimestamp(),
+                },
+                { merge: true }
+            );
         } catch (err) {
             console.error(err);
         } finally {
@@ -165,13 +171,13 @@ export default function RegisterSimProtection({ onClose }) {
     const nextStep = async () => {
         if (validateStep()) {
             await saveStep();
-            setCurrentStep(s => Math.min(s + 1, steps.length));
+            setCurrentStep((s) => Math.min(s + 1, steps.length));
         }
     };
 
     const prevStep = async () => {
         await saveStep();
-        setCurrentStep(s => Math.max(s - 1, 1));
+        setCurrentStep((s) => Math.max(s - 1, 1));
     };
 
     const handleSubmit = async (e) => {
@@ -180,10 +186,11 @@ export default function RegisterSimProtection({ onClose }) {
         setLoading(true);
         try {
             if (!auth.currentUser) return;
-            await setDoc(doc(db, "users", auth.currentUser.uid), {
-                simProtection: form,
-                completedAt: serverTimestamp()
-            }, { merge: true });
+            await setDoc(
+                doc(db, "users", auth.currentUser.uid),
+                { simProtection: form, completedAt: serverTimestamp() },
+                { merge: true }
+            );
             alert("SIM Protection registration complete!");
             if (onClose) onClose();
         } catch (err) {
@@ -195,13 +202,15 @@ export default function RegisterSimProtection({ onClose }) {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 p-6">
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100 p-6">
             <motion.div
                 initial={{ opacity: 0, y: 40 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-3xl border border-gray-100"
+                className="bg-white/80 backdrop-blur-xl p-8 rounded-3xl w-full max-w-3xl shadow-2xl border border-gray-100"
             >
-                <h2 className="text-2xl font-bold mb-4 text-center">Register SIM Protection</h2>
+                <h2 className="text-3xl font-bold text-center text-gray-800 mb-4">
+                    Register SIM Protection
+                </h2>
                 <ProgressBar step={currentStep} total={steps.length} />
 
                 <form onSubmit={handleSubmit} className="mt-6 space-y-6">
@@ -211,34 +220,69 @@ export default function RegisterSimProtection({ onClose }) {
                             initial={{ opacity: 0, x: 50 }}
                             animate={{ opacity: 1, x: 0 }}
                             exit={{ opacity: 0, x: -50 }}
-                            transition={{ duration: 0.3 }}
+                            transition={{ duration: 0.4 }}
                         >
-                            {currentStep === 1 && (
-                                <Step1 form={form} onChange={handleChange} errors={errors} />
-                            )}
+                            {currentStep === 1 && <Step1 form={form} onChange={handleChange} errors={errors} />}
                             {currentStep === 2 && (
-                                <Step2 form={form} onChange={handleArrayChange} addItem={addArrayItem} removeItem={removeArrayItem} errors={errors} />
+                                <Step2
+                                    form={form}
+                                    onChange={handleArrayChange}
+                                    addItem={addArrayItem}
+                                    removeItem={removeArrayItem}
+                                    errors={errors}
+                                />
                             )}
                             {currentStep === 3 && (
-                                <Step3 form={form} onChange={handleArrayChange} addItem={addArrayItem} removeItem={removeArrayItem} errors={errors} />
+                                <Step3
+                                    form={form}
+                                    onChange={handleArrayChange}
+                                    addItem={addArrayItem}
+                                    removeItem={removeArrayItem}
+                                    errors={errors}
+                                />
                             )}
-                            {currentStep === 4 && (
-                                <Step4 form={form} onChange={handleChange} errors={errors} />
-                            )}
+                            {currentStep === 4 && <Step4 form={form} onChange={handleChange} errors={errors} />}
                             {currentStep === 5 && (
-                                <Step5 form={form} startDrawing={startDrawing} draw={draw} stopDrawing={stopDrawing} clearSignature={clearSignature} canvasRef={canvasRef} onChange={handleChange} errors={errors} />
+                                <Step5
+                                    form={form}
+                                    startDrawing={startDrawing}
+                                    draw={draw}
+                                    stopDrawing={stopDrawing}
+                                    clearSignature={clearSignature}
+                                    canvasRef={canvasRef}
+                                    onChange={handleChange}
+                                    errors={errors}
+                                />
                             )}
                         </motion.div>
                     </AnimatePresence>
 
                     <div className="flex justify-between">
                         {currentStep > 1 && (
-                            <button type="button" onClick={prevStep} className="px-5 py-2 bg-gray-200 rounded-xl flex items-center gap-1"><ArrowLeft size={16} /> Back</button>
+                            <button
+                                type="button"
+                                onClick={prevStep}
+                                className="px-5 py-2 flex items-center gap-1 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition"
+                            >
+                                <ArrowLeft size={16} /> Back
+                            </button>
                         )}
                         {currentStep < steps.length ? (
-                            <button type="button" onClick={nextStep} className="ml-auto px-6 py-2 bg-blue-600 text-white rounded-xl flex items-center gap-2">Next <ArrowRight size={16} /></button>
+                            <button
+                                type="button"
+                                onClick={nextStep}
+                                className="ml-auto px-6 py-2 flex items-center gap-1 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl shadow hover:from-blue-600 transition"
+                            >
+                                Next <ArrowRight size={16} />
+                            </button>
                         ) : (
-                            <button type="submit" disabled={loading || savingStep} className="ml-auto px-6 py-2 bg-green-600 text-white rounded-xl flex items-center gap-2">{loading ? <Loader2 className="animate-spin" size={18} /> : "Finish & Save"}</button>
+                            <button
+                                type="submit"
+                                disabled={loading || savingStep}
+                                className="ml-auto px-6 py-2 flex items-center justify-center gap-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl shadow hover:from-green-600 transition disabled:opacity-50"
+                            >
+                                {loading ? <Loader2 className="animate-spin" size={18} /> : "Finish & Save"}
+                            </button>
                         )}
                     </div>
                 </form>
@@ -247,31 +291,54 @@ export default function RegisterSimProtection({ onClose }) {
     );
 }
 
-/* ---------------- Components ---------------- */
+/* ---------- Components ---------- */
+
 const ProgressBar = ({ step, total }) => {
     const percent = (step / total) * 100;
     return (
         <div className="mb-4">
             <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
-                <motion.div className="h-2 bg-gradient-to-r from-blue-400 to-blue-600" initial={{ width: 0 }} animate={{ width: `${percent}%` }} transition={{ duration: 0.3 }} />
+                <motion.div
+                    className="h-2 bg-gradient-to-r from-blue-400 to-blue-600"
+                    initial={{ width: 0 }}
+                    animate={{ width: `${percent}%` }}
+                    transition={{ duration: 0.4 }}
+                />
+            </div>
+            <div className="flex justify-between text-xs text-gray-500 mt-1">
+                {[...Array(total)].map((_, i) => (
+                    <span key={i} className={i + 1 <= step ? "text-blue-600 font-semibold" : ""}>
+                        Step {i + 1}
+                    </span>
+                ))}
             </div>
         </div>
     );
 };
 
-const Input = ({ label, name, value, onChange, type = "text", error }) => (
+const Input = ({ label, name, value, onChange, type = "text", error, help }) => (
     <div>
-        <label className="block font-medium text-gray-700">{label}</label>
-        <input type={type} name={name} value={value} onChange={onChange} className={`w-full mt-1 p-2 border rounded-lg ${error ? "border-red-500" : "border-gray-300"}`} />
-        {error && <small className="text-red-500">{error}</small>}
+        <label className="font-medium text-gray-700">{label}</label>
+        <input
+            name={name}
+            value={value}
+            type={type}
+            onChange={onChange}
+            className={`w-full mt-1 p-2 border rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none ${error ? "border-red-500" : "border-gray-300"
+                }`}
+        />
+        {help && <small className="text-gray-400">{help}</small>}
+        {error && <small className="text-red-500 block">{error}</small>}
     </div>
 );
 
+/* ---------- Step Components ---------- */
+
 const Step1 = ({ form, onChange, errors }) => (
     <div className="space-y-4">
-        <Input label="ID Number" name="idNumber" value={form.idNumber} onChange={onChange} error={errors.idNumber} />
+        <Input label="ID Number" name="idNumber" value={form.idNumber} onChange={onChange} error={errors.idNumber} help="13-digit SA ID" />
         <Input label="Linked SIM Number" name="linkedNumber" value={form.linkedNumber} onChange={onChange} error={errors.linkedNumber} />
-        <Input label="Email for Alerts" name="email" value={form.email} onChange={onChange} />
+        <Input label="Email for Alerts" name="email" value={form.email} onChange={onChange} error={errors.email} />
     </div>
 );
 
@@ -279,12 +346,30 @@ const Step2 = ({ form, onChange, addItem, removeItem, errors }) => (
     <div className="space-y-4">
         {form.bankAccounts.map((acc, i) => (
             <div key={i} className="border p-4 rounded-lg space-y-2">
-                <Input label="Bank Name" name={`bankName_${i}`} value={acc.bankName} onChange={e => onChange(e, "bankAccounts", i, "bankName")} error={errors[`bankName_${i}`]} />
-                <Input label="Account Number" name={`accountNumber_${i}`} value={acc.accountNumber} onChange={e => onChange(e, "bankAccounts", i, "accountNumber")} error={errors[`accountNumber_${i}`]} />
-                {i > 0 && <button type="button" onClick={() => removeItem("bankAccounts", i)} className="text-red-500">Remove</button>}
+                <Input
+                    label="Bank Name"
+                    name={`bankName_${i}`}
+                    value={acc.bankName}
+                    onChange={(e) => onChange(e, "bankAccounts", i, "bankName")}
+                    error={errors[`bankName_${i}`]}
+                />
+                <Input
+                    label="Account Number"
+                    name={`accountNumber_${i}`}
+                    value={acc.accountNumber}
+                    onChange={(e) => onChange(e, "bankAccounts", i, "accountNumber")}
+                    error={errors[`accountNumber_${i}`]}
+                />
+                {i > 0 && (
+                    <button type="button" onClick={() => removeItem("bankAccounts", i)} className="text-red-500">
+                        Remove
+                    </button>
+                )}
             </div>
         ))}
-        <button type="button" onClick={() => addItem("bankAccounts", { bankName: "", accountNumber: "" })} className="mt-2 px-4 py-1 bg-gray-200 rounded">Add Account</button>
+        <button type="button" onClick={() => addItem("bankAccounts", { bankName: "", accountNumber: "" })} className="mt-2 px-4 py-1 bg-gray-200 rounded">
+            Add Account
+        </button>
     </div>
 );
 
@@ -292,21 +377,38 @@ const Step3 = ({ form, onChange, addItem, removeItem, errors }) => (
     <div className="space-y-4">
         {form.nextOfKin.map((kin, i) => (
             <div key={i} className="border p-4 rounded-lg space-y-2">
-                <Input label="Name" value={kin.name} onChange={e => onChange(e, "nextOfKin", i, "name")} error={errors[`kinName_${i}`]} />
-                <Input label="Phone" value={kin.phone} onChange={e => onChange(e, "nextOfKin", i, "phone")} error={errors[`kinPhone_${i}`]} />
-                <Input label="Relationship" value={kin.relationship} onChange={e => onChange(e, "nextOfKin", i, "relationship")} error={errors[`kinRelationship_${i}`]} />
-                {i > 0 && <button type="button" onClick={() => removeItem("nextOfKin", i)} className="text-red-500">Remove</button>}
+                <Input label="Name" value={kin.name} onChange={(e) => onChange(e, "nextOfKin", i, "name")} error={errors[`kinName_${i}`]} />
+                <Input label="Phone" value={kin.phone} onChange={(e) => onChange(e, "nextOfKin", i, "phone")} error={errors[`kinPhone_${i}`]} />
+                <Input
+                    label="Relationship"
+                    value={kin.relationship}
+                    onChange={(e) => onChange(e, "nextOfKin", i, "relationship")}
+                    error={errors[`kinRelationship_${i}`]}
+                />
+                {i > 0 && (
+                    <button type="button" onClick={() => removeItem("nextOfKin", i)} className="text-red-500">
+                        Remove
+                    </button>
+                )}
             </div>
         ))}
-        <button type="button" onClick={() => addItem("nextOfKin", { name: "", phone: "", relationship: "" })} className="mt-2 px-4 py-1 bg-gray-200 rounded">Add Contact</button>
+        <button type="button" onClick={() => addItem("nextOfKin", { name: "", phone: "", relationship: "" })} className="mt-2 px-4 py-1 bg-gray-200 rounded">
+            Add Contact
+        </button>
     </div>
 );
 
 const Step4 = ({ form, onChange }) => (
     <div className="space-y-4">
-        <label className="flex items-center gap-2"><input type="checkbox" name="authorizations.telecom" checked={form.authorizations.telecom} onChange={onChange} /> Authorize Telecom</label>
-        <label className="flex items-center gap-2"><input type="checkbox" name="authorizations.bank" checked={form.authorizations.bank} onChange={onChange} /> Authorize Bank</label>
-        <label className="flex items-center gap-2"><input type="checkbox" name="authorizations.biometric" checked={form.authorizations.biometric} onChange={onChange} /> Biometric Consent</label>
+        <label className="flex items-center gap-2">
+            <input type="checkbox" name="authorizations.telecom" checked={form.authorizations.telecom} onChange={onChange} /> Authorize Telecom
+        </label>
+        <label className="flex items-center gap-2">
+            <input type="checkbox" name="authorizations.bank" checked={form.authorizations.bank} onChange={onChange} /> Authorize Bank
+        </label>
+        <label className="flex items-center gap-2">
+            <input type="checkbox" name="authorizations.biometric" checked={form.authorizations.biometric} onChange={onChange} /> Biometric Consent
+        </label>
     </div>
 );
 
@@ -314,12 +416,22 @@ const Step5 = ({ form, startDrawing, draw, stopDrawing, clearSignature, canvasRe
     <div>
         <label className="block font-medium text-gray-700 mb-1">Signature</label>
         <div className="border h-40 relative">
-            <canvas ref={canvasRef} style={{ width: "100%", height: "100%" }}
-                onMouseDown={startDrawing} onMouseMove={draw} onMouseUp={stopDrawing} onMouseLeave={stopDrawing}
-                onTouchStart={startDrawing} onTouchMove={draw} onTouchEnd={stopDrawing} />
-            <button type="button" onClick={clearSignature} className="absolute top-1 right-1 bg-gray-200 px-2 py-1 rounded">Clear</button>
+            <canvas
+                ref={canvasRef}
+                style={{ width: "100%", height: "100%" }}
+                onMouseDown={startDrawing}
+                onMouseMove={draw}
+                onMouseUp={stopDrawing}
+                onMouseLeave={stopDrawing}
+                onTouchStart={startDrawing}
+                onTouchMove={draw}
+                onTouchEnd={stopDrawing}
+            />
+            <button type="button" onClick={clearSignature} className="absolute top-1 right-1 bg-gray-200 px-2 py-1 rounded">
+                Clear
+            </button>
         </div>
+        {errors.signature && <small className="text-red-500">{errors.signature}</small>}
         <Input label="Full Name" name="signatureName" value={form.signatureName} onChange={onChange} error={errors.signatureName} />
-        {errors.signature && <p className="text-red-500">{errors.signature}</p>}
     </div>
 );
