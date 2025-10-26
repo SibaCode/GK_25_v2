@@ -14,6 +14,7 @@ import HomePage from "./newPages/HomePage";
 import SimFraud from "./newPages/SimFraud";
 import DataBroker from "./newPages/DataBroker";
 import CreditLock from "./newPages/CreditLock";
+import MultiStepRegister from "./newPages/MultiStepRegister";
 
 
 function App() {
@@ -23,7 +24,10 @@ function App() {
       <Route path="/" element={<HomePage />} />
 
       {/* Auth routes */}
-      <Route path="/register" element={<Register />} />
+      {/* <Route path="/register" element={<Register />} /> */}
+            <Route path="/register" element={<MultiStepRegister />} />
+
+      
       <Route path="/login" element={<Login />} />
 
       {/* Dashboard */}
