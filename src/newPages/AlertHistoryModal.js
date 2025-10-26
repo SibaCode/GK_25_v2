@@ -2,229 +2,302 @@ import { useState, useRef, useEffect } from "react";
 import { ShieldCheck, X, AlertTriangle, Eye } from "lucide-react";
 import jsPDF from "jspdf";
 
-// --- Simple Face Verification ---
 function SimpleFaceVerify({ onVerify, onCancel }) {
-  const videoRef = useRef();
-  const [error, setError] = useState("");
+    const videoRef = useRef();
+    const [error, setError] = useState("");
 
-  useEffect(() => {
-    const startCamera = async () => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        videoRef.current.srcObject = stream;
-      } catch {
-        setError("Cannot access camera. Please allow camera access.");
-      }
+    useEffect(() => {
+        const startCamera = async () => {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                videoRef.current.srcObject = stream;
+            } catch {
+                setError("Cannot access camera. Please allow camera access.");
+            }
+        };
+        startCamera();
+        return () => {
+            if (videoRef.current?.srcObject)
+                videoRef.current.srcObject.getTracks().forEach((track) => track.stop());
+        };
+    }, []);
+
+    const handleVerify = () => {
+        const video = videoRef.current;
+        if (video && video.readyState === 4) {
+            video.srcObject.getTracks().forEach((track) => track.stop());
+            onVerify();
+        } else {
+            setError("No face detected. Make sure your face is in view.");
+        }
     };
-    startCamera();
-    return () => {
-      if (videoRef.current?.srcObject)
-        videoRef.current.srcObject.getTracks().forEach((track) => track.stop());
-    };
-  }, []);
 
-  const handleVerify = () => {
-    const video = videoRef.current;
-    if (video && video.readyState === 4) {
-      video.srcObject.getTracks().forEach((track) => track.stop());
-      onVerify();
-    } else {
-      setError("No face detected. Make sure your face is in view.");
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4">
-      <div className="bg-white w-full max-w-md p-6 rounded-2xl shadow-lg flex flex-col gap-4">
-        <h3 className="text-xl font-bold text-center">Face Verification</h3>
-        <video
-          ref={videoRef}
-          autoPlay
-          muted
-          className="w-full h-60 bg-gray-100 rounded"
-        />
-        {error && <p className="text-red-500 text-sm">{error}</p>}
-        <div className="flex justify-end gap-3">
-          <button
-            className="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300 transition"
-            onClick={onCancel}
-          >
-            Cancel
-          </button>
-          <button
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition flex items-center gap-1"
-            onClick={handleVerify}
-          >
-            <ShieldCheck className="w-4 h-4" /> Verify
-          </button>
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4">
+            <div className="bg-white w-full max-w-md p-6 rounded-2xl shadow-lg flex flex-col gap-4">
+                <h3 className="text-xl font-bold text-center">Face Verification</h3>
+                <video ref={videoRef} autoPlay muted className="w-full h-60 bg-gray-100 rounded" />
+                {error && <p className="text-red-500 text-sm">{error}</p>}
+                <div className="flex justify-end gap-3">
+                    <button
+                        className="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300 transition"
+                        onClick={onCancel}
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition flex items-center gap-1"
+                        onClick={handleVerify}
+                    >
+                        <ShieldCheck className="w-4 h-4" /> Verify
+                    </button>
+                </div>
+            </div>
         </div>
-      </div>
-    </div>
-  );
+    );
 }
 
-// --- Main Modal ---
+// --- Claim Form Modal ---
+function ClaimForm({ alert, onSubmit, onCancel }) {
+    const [claimDetails, setClaimDetails] = useState({ reason: "", amount: "" });
+
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setClaimDetails((prev) => ({ ...prev, [name]: value }));
+    };
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        onSubmit(claimDetails);
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4">
+            <div className="bg-white w-full max-w-md p-6 rounded-2xl shadow-lg flex flex-col gap-4">
+                <h3 className="text-xl font-bold text-center">Log Insurance Claim</h3>
+                <p className="text-sm text-gray-600 mb-2">
+                    Logging claim for SIM: {alert.simNumber}
+                </p>
+                <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+                    <textarea
+                        name="reason"
+                        placeholder="Reason for claim"
+                        value={claimDetails.reason}
+                        onChange={handleChange}
+                        className="border rounded p-2 w-full"
+                        required
+                    />
+                    <input
+                        name="amount"
+                        type="number"
+                        placeholder="Claim amount"
+                        value={claimDetails.amount}
+                        onChange={handleChange}
+                        className="border rounded p-2 w-full"
+                        required
+                    />
+                    <div className="flex justify-end gap-2">
+                        <button
+                            type="button"
+                            className="bg-gray-200 px-3 py-1 rounded hover:bg-gray-300"
+                            onClick={onCancel}
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600"
+                        >
+                            Submit Claim
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+}
+
 export default function AlertHistoryModal({ isOpen, onClose, alerts, currentUser }) {
-  const [searchSim, setSearchSim] = useState("");
-  const [filterDate, setFilterDate] = useState("");
-  const [faceAlert, setFaceAlert] = useState(null);
+    const [searchSim, setSearchSim] = useState("");
+    const [filterDate, setFilterDate] = useState("");
+    const [faceAlert, setFaceAlert] = useState(null);
+    const [claimAlert, setClaimAlert] = useState(null);
 
-  if (!isOpen) return null;
+    if (!isOpen) return null;
 
-  const filteredAlerts = alerts.filter((a) => {
-    const matchesSim = a.simNumber.includes(searchSim);
-    const matchesDate = filterDate
-      ? new Date(a.timestamp?.toDate().toDateString()) ===
-        new Date(filterDate).toDateString()
-      : true;
-    return matchesSim && matchesDate;
-  });
-
-  const handleAuthorize = (alert) => setFaceAlert(alert);
-  const handleDeny = (alert) => {
-    alert.status = "Not Authorized";
-    alert.authorizedBy = currentUser?.fullName || "Admin";
-    alert.authorizationTime = new Date();
-  };
-
-  const getStatusClass = (status) => {
-    if (status === "Authorized") return "bg-green-100 text-green-700 border-green-400";
-    if (status === "Not Authorized") return "bg-red-100 text-red-700 border-red-400";
-    return "bg-yellow-100 text-yellow-700 border-yellow-400"; // pending
-  };
-
-  const exportToCSV = () => {
-    const csvContent =
-      "data:text/csv;charset=utf-8," +
-      ["SIM,Time,Status,Authorized By,Authorization Time"]
-        .concat(
-          filteredAlerts.map(
-            (a) =>
-              `${a.simNumber},${a.timestamp?.toDate().toLocaleString()},${a.status || "Pending"},${
-                a.authorizedBy || "-"
-              },${a.authorizationTime ? new Date(a.authorizationTime).toLocaleString() : "-"}`
-          )
-        )
-        .join("\n");
-    const link = document.createElement("a");
-    link.setAttribute("href", encodeURI(csvContent));
-    link.setAttribute("download", "alerts.csv");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const exportToPDF = () => {
-    const doc = new jsPDF();
-    filteredAlerts.forEach((a, i) => {
-      doc.text(
-        `SIM: ${a.simNumber} | Time: ${a.timestamp?.toDate().toLocaleString()} | Status: ${
-          a.status || "Pending"
-        } | Authorized By: ${a.authorizedBy || "-"} | Authorization: ${
-          a.authorizationTime ? new Date(a.authorizationTime).toLocaleString() : "-"
-        }`,
-        10,
-        10 + i * 10
-      );
+    const filteredAlerts = alerts.filter((a) => {
+        const matchesSim = a.simNumber.includes(searchSim);
+        const matchesDate = filterDate
+            ? new Date(a.timestamp?.toDate().toDateString()) ===
+            new Date(filterDate).toDateString()
+            : true;
+        return matchesSim && matchesDate;
     });
-    doc.save("alerts.pdf");
-  };
 
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4">
-      <div className="bg-white w-full max-w-3xl p-6 rounded-2xl shadow-lg overflow-y-auto max-h-[90vh] flex flex-col gap-4">
-        {/* Header */}
-        <div className="flex justify-between items-center border-b pb-3">
-          <h2 className="text-xl font-bold flex items-center gap-2">
-            <AlertTriangle className="w-5 h-5 text-red-500" /> Alert History
-          </h2>
-          <button
-            className="text-gray-500 hover:text-gray-800 font-medium"
-            onClick={onClose}
-          >
-            Close
-          </button>
-        </div>
+    const handleAuthorize = (alert) => setFaceAlert(alert);
+    const handleDeny = (alert) => {
+        alert.status = "Not Authorized";
+        alert.authorizedBy = currentUser?.fullName || "Admin";
+        alert.authorizationTime = new Date();
+    };
 
-     
-        {/* Export Buttons */}
-        <div className="flex gap-2 flex-wrap">
-          <button
-            className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 flex items-center gap-1"
-            onClick={exportToCSV}
-          >
-            <Eye className="w-4 h-4" /> Export CSV
-          </button>
-          <button
-            className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600 flex items-center gap-1"
-            onClick={exportToPDF}
-          >
-            <Eye className="w-4 h-4" /> Export PDF
-          </button>
-        </div>
+    const handleClaim = (alert) => setClaimAlert(alert);
 
-        {/* Alerts List */}
-        {filteredAlerts.length === 0 ? (
-          <p className="text-sm text-gray-500 text-center mt-4">No alerts found.</p>
-        ) : (
-          <ul className="space-y-3 mt-2">
-            {filteredAlerts.map((alert, idx) => (
-              <li
-                key={idx}
-                className="border border-gray-200 p-4 rounded-lg flex flex-col md:flex-row md:justify-between gap-2 items-start hover:shadow-sm transition bg-white"
-              >
-                <div className="space-y-1">
-                  <p className="text-sm font-semibold">SIM: {alert.simNumber}</p>
-                  <p className="text-sm text-gray-600">
-                    Time: {alert.timestamp?.toDate().toLocaleString()}
-                  </p>
+    const submitClaim = (details) => {
+        claimAlert.claim = details;
+        claimAlert.status = "Claim Logged";
+        claimAlert.claimTime = new Date();
+        setClaimAlert(null);
+        alert("✅ Claim logged successfully");
+    };
+
+    const getStatusClass = (status) => {
+        if (status === "Authorized") return "bg-green-100 text-green-700 border-green-400";
+        if (status === "Not Authorized") return "bg-red-100 text-red-700 border-red-400";
+        if (status === "Claim Logged") return "bg-blue-100 text-blue-700 border-blue-400";
+        return "bg-yellow-100 text-yellow-700 border-yellow-400"; // pending
+    };
+
+    const exportToCSV = () => {
+        const csvContent =
+            "data:text/csv;charset=utf-8," +
+            ["SIM,Time,Status,Authorized By,Authorization Time,Claim"]
+                .concat(
+                    filteredAlerts.map(
+                        (a) =>
+                            `${a.simNumber},${a.timestamp?.toDate().toLocaleString()},${a.status || "Pending"},${a.authorizedBy || "-"
+                            },${a.authorizationTime ? new Date(a.authorizationTime).toLocaleString() : "-"},${a.claim ? JSON.stringify(a.claim) : "-"
+                            }`
+                    )
+                )
+                .join("\n");
+        const link = document.createElement("a");
+        link.setAttribute("href", encodeURI(csvContent));
+        link.setAttribute("download", "alerts.csv");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
+    const exportToPDF = () => {
+        const doc = new jsPDF();
+        filteredAlerts.forEach((a, i) => {
+            doc.text(
+                `SIM: ${a.simNumber} | Time: ${a.timestamp?.toDate().toLocaleString()} | Status: ${a.status || "Pending"
+                } | Authorized By: ${a.authorizedBy || "-"} | Authorization: ${a.authorizationTime ? new Date(a.authorizationTime).toLocaleString() : "-"
+                } | Claim: ${a.claim ? JSON.stringify(a.claim) : "-"}`,
+                10,
+                10 + i * 10
+            );
+        });
+        doc.save("alerts.pdf");
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4">
+            <div className="bg-white w-full max-w-3xl p-6 rounded-2xl shadow-lg overflow-y-auto max-h-[90vh] flex flex-col gap-4">
+                <div className="flex justify-between items-center border-b pb-3">
+                    <h2 className="text-xl font-bold flex items-center gap-2">
+                        <AlertTriangle className="w-5 h-5 text-red-500" /> Alert History
+                    </h2>
+                    <button className="text-gray-500 hover:text-gray-800 font-medium" onClick={onClose}>
+                        Close
+                    </button>
                 </div>
 
-                <div className="flex gap-2 items-center">
-                  <span
-                    className={`inline-block px-2 py-1 text-xs font-semibold rounded border ${getStatusClass(
-                      alert.status
-                    )}`}
-                  >
-                    {alert.status || "Pending"}
-                  </span>
-
-                  {alert.status === "pending" && (
-                    <>
-                      <button
-                        className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 flex items-center gap-1"
-                        onClick={() => handleDeny(alert)}
-                      >
-                        <X className="w-4 h-4" /> Deny
-                      </button>
-                      <button
+                {/* Export Buttons */}
+                <div className="flex gap-2 flex-wrap">
+                    <button
+                        className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 flex items-center gap-1"
+                        onClick={exportToCSV}
+                    >
+                        <Eye className="w-4 h-4" /> Export CSV
+                    </button>
+                    <button
                         className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600 flex items-center gap-1"
-                        onClick={() => handleAuthorize(alert)}
-                      >
-                        <ShieldCheck className="w-4 h-4" /> Authorize
-                      </button>
-                    </>
-                  )}
+                        onClick={exportToPDF}
+                    >
+                        <Eye className="w-4 h-4" /> Export PDF
+                    </button>
                 </div>
-              </li>
-            ))}
-          </ul>
-        )}
 
-        {/* Face Verification */}
-        {faceAlert && (
-          <SimpleFaceVerify
-            onVerify={() => {
-              faceAlert.status = "Authorized";
-              faceAlert.authorizedBy = currentUser?.fullName || "Admin";
-              faceAlert.authorizationTime = new Date();
-              setFaceAlert(null);
-              alert("✅ Authorization successful");
-            }}
-            onCancel={() => setFaceAlert(null)}
-          />
-        )}
-      </div>
-    </div>
-  );
+                {/* Alerts List */}
+                {filteredAlerts.length === 0 ? (
+                    <p className="text-sm text-gray-500 text-center mt-4">No alerts found.</p>
+                ) : (
+                    <ul className="space-y-3 mt-2">
+                        {filteredAlerts.map((alert, idx) => (
+                            <li
+                                key={idx}
+                                className="border border-gray-200 p-4 rounded-lg flex flex-col md:flex-row md:justify-between gap-2 items-start hover:shadow-sm transition bg-white"
+                            >
+                                <div className="space-y-1">
+                                    <p className="text-sm font-semibold">SIM: {alert.simNumber}</p>
+                                    <p className="text-sm text-gray-600">
+                                        Time: {alert.timestamp?.toDate().toLocaleString()}
+                                    </p>
+                                </div>
+
+                                <div className="flex gap-2 items-center flex-wrap">
+                                    <span
+                                        className={`inline-block px-2 py-1 text-xs font-semibold rounded border ${getStatusClass(
+                                            alert.status
+                                        )}`}
+                                    >
+                                        {alert.status || "Pending"}
+                                    </span>
+
+                                    {alert.status === "pending" && (
+                                        <>
+                                            <button
+                                                className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 flex items-center gap-1"
+                                                onClick={() => handleDeny(alert)}
+                                            >
+                                                <X className="w-4 h-4" /> Deny
+                                            </button>
+                                            <button
+                                                className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600 flex items-center gap-1"
+                                                onClick={() => handleAuthorize(alert)}
+                                            >
+                                                <ShieldCheck className="w-4 h-4" /> Authorize
+                                            </button>
+                                            <button
+                                                className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 flex items-center gap-1"
+                                                onClick={() => handleClaim(alert)}
+                                            >
+                                                <Eye className="w-4 h-4" /> Log Claim
+                                            </button>
+                                        </>
+                                    )}
+                                </div>
+                            </li>
+                        ))}
+                    </ul>
+                )}
+
+                {/* Face Verification */}
+                {faceAlert && (
+                    <SimpleFaceVerify
+                        onVerify={() => {
+                            faceAlert.status = "Authorized";
+                            faceAlert.authorizedBy = currentUser?.fullName || "Admin";
+                            faceAlert.authorizationTime = new Date();
+                            setFaceAlert(null);
+                            alert("✅ Authorization successful");
+                        }}
+                        onCancel={() => setFaceAlert(null)}
+                    />
+                )}
+
+                {/* Claim Form */}
+                {claimAlert && (
+                    <ClaimForm
+                        alert={claimAlert}
+                        onSubmit={submitClaim}
+                        onCancel={() => setClaimAlert(null)}
+                    />
+                )}
+            </div>
+        </div>
+    );
 }
