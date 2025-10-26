@@ -1,21 +1,17 @@
-// src/newDash/dashboard/fakeRicaAPI.js
+// src/newDash/dashboard/fakeRicaApi.js
 
-// Demo linked SIM data by ID number
-const demoSims = {
-  "9001015800087": [
-    { number: "0831234567", status: "Active", provider: "Telkom" },
-    { number: "0849876543", status: "Suspended", provider: "Cell C" },
-  ],
-  "8002024800089": [
-    { number: "0823456789", status: "Active", provider: "Vodacom" },
-  ],
+// Simulate a delay for API-like behavior
+const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Fake database of linked SIMs by ID
+const linkedSimsDatabase = {
+    "8001015009087": ["0821234567", "0837654321"],
+    "9002026009088": ["0812345678"],
+    "9503037009089": ["0845678901", "0856789012", "0867890123"],
 };
 
-// Simulate fetching linked SIMs by ID with a delay
+// Function to get linked SIMs
 export const getLinkedSimsById = async (idNumber) => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve(demoSims[idNumber] || []);
-    }, 700); // simulate network/API delay
-  });
+    await delay(500); // simulate network delay
+    return linkedSimsDatabase[idNumber] || [];
 };
