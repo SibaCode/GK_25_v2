@@ -10,13 +10,13 @@ import Dashboard from "./newPages/Dashboard";
 import RegisterSimProtection from "./newPages/RegisterSimProtection";
 import AlertsPage from "./newPages/AlertsPage";
 import SimActivity from "./newPages/SimActivity";
-import HomePage from "./newPages/HomePage";
+//import HomePage from "./newPages/HomePage";
 
 function App() {
   return (
     <Routes>
       {/* Home / Welcome page */}
-      <Route path="/" element={<HomePage />} />
+       
 
       {/* Auth routes */}
       <Route path="/register" element={<Register />} />
