@@ -1,6 +1,6 @@
 // src/App.js
 import React from "react";
-import { Routes, Route } from "react-router-dom"; // no BrowserRouter here
+import { Routes, Route } from "react-router-dom";
 import "./i18n";
 
 // Pages
@@ -17,6 +17,11 @@ import CreditLock from "./newPages/CreditLock";
 import MultiStepRegister from "./newPages/MultiStepRegister";
 import Test from "./newPages/Test";
 
+// New pages with sidebar
+// import Overview from "./newPages/Overview";
+// import Protection from "./newPages/Protection";
+// import Accounts from "./newPages/Accounts";
+// import Documents from "./newPages/Documents";
 
 function App() {
   return (
@@ -26,14 +31,15 @@ function App() {
       <Route path="/test" element={<Test />} />
 
       {/* Auth routes */}
-      {/* <Route path="/register" element={<Register />} /> */}
-            <Route path="/register" element={<MultiStepRegister />} />
-
-      
+      <Route path="/register" element={<MultiStepRegister />} />
       <Route path="/login" element={<Login />} />
 
-      {/* Dashboard */}
+      {/* Dashboard & Protected Pages with Sidebar */}
       <Route path="/dashboard" element={<Dashboard />} />
+      {/* <Route path="/overview" element={<Overview />} />
+      <Route path="/protection" element={<Protection />} />
+      <Route path="/accounts" element={<Accounts />} />
+      <Route path="/documents" element={<Documents />} /> */}
 
       {/* SIM Protection */}
       <Route path="/register-sim" element={<RegisterSimProtection />} />
@@ -44,10 +50,6 @@ function App() {
       <Route path="/SimFraud" element={<SimFraud />} />
       <Route path="/DataBroker" element={<DataBroker />} />
       <Route path="/CreditLock" element={<CreditLock />} />
-
-
-      {/* Redirect unknown routes to home */}
-      {/* <Route path="*" element={<Navigate to="/" />} /> */}
     </Routes>
   );
 }
