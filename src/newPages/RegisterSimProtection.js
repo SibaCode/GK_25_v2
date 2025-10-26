@@ -14,12 +14,11 @@ import {
   Camera, 
   Upload, 
   Eye,
-  House, 
+  Bank, 
   Signature, 
-  Video, 
-  Circle
+  Circle,
+  House
 } from "lucide-react";
-// Make sure these are the correct icon names - if any don't exist, remove them
 import { doc, setDoc, serverTimestamp, getDoc } from "firebase/firestore";
 import { db, auth } from "../firebase";
 import { getLinkedSimsById, verifyCompliance } from "./fakeRicaApi";
@@ -27,13 +26,9 @@ import { translations } from "./translations";
 
 const RegisterSimProtection = ({ onClose }) => {
   const [formData, setFormData] = useState({
-    // Identity Verification
-    idNumber: "",
-    idFront: null,
-    idBack: null,
-    selfie: null,
-    livePhotos: [],
-    biometricConsent: false,
+    // Identity Verification (no image data stored)
+    idVerified: false,
+    faceVerified: false,
     
     // Personal Details
     selectedNumber: "",
@@ -63,9 +58,9 @@ const RegisterSimProtection = ({ onClose }) => {
     privacyConsent: false,
     insuranceTerms: false,
     
-    // Digital Signature
+    // Digital Signature (we'll store only metadata, not image)
     fullLegalName: "",
-    digitalSignature: "",
+    signatureProvided: false,
     perjuryCertification: false,
     bindingAgreement: false,
     
@@ -80,17 +75,15 @@ const RegisterSimProtection = ({ onClose }) => {
   const [verificationStatus, setVerificationStatus] = useState(null);
   const [uploadProgress, setUploadProgress] = useState({});
   const [showInsuranceDetails, setShowInsuranceDetails] = useState(false);
-  const [isRecording, setIsRecording] = useState(false);
-  const [recordedVideo, setRecordedVideo] = useState(null);
-  const [capturedPhotos, setCapturedPhotos] = useState([]);
+  const [faceVerificationStatus, setFaceVerificationStatus] = useState('pending');
+  const [idVerificationStatus, setIdVerificationStatus] = useState('pending');
+  const [userExistingData, setUserExistingData] = useState(null);
 
   const canvasRef = useRef(null);
-  const videoRef = useRef(null);
-  const streamRef = useRef(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const fileInputRefFront = useRef(null);
   const fileInputRefBack = useRef(null);
-  const selfieInputRef = useRef(null);
+  const faceInputRef = useRef(null);
 
   const steps = [
     "Identity Verification",
@@ -111,92 +104,51 @@ const RegisterSimProtection = ({ onClose }) => {
 
   const t = translations[formData.preferredLanguage] || translations.en;
 
-  // Live Photo Capture Functions
-  const startCamera = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { 
-          width: 1280, 
-          height: 720,
-          facingMode: 'user'
-        } 
-      });
-      streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
+  // Load user's existing data on component mount
+  useEffect(() => {
+    const loadUserData = async () => {
+      if (!auth.currentUser) return;
+      
+      try {
+        const userDoc = await getDoc(doc(db, "users", auth.currentUser.uid));
+        if (userDoc.exists()) {
+          const data = userDoc.data();
+          setUserExistingData(data);
+          console.log("Loaded existing user data:", data);
+        }
+      } catch (error) {
+        console.error("Error loading user data:", error);
       }
-    } catch (error) {
-      console.error("Error accessing camera:", error);
-      alert("Unable to access camera. Please check permissions.");
-    }
-  };
+    };
+    
+    loadUserData();
+  }, []);
 
-  const stopCamera = () => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
-    }
-  };
-
-  const captureLivePhoto = () => {
-    if (videoRef.current) {
-      const canvas = document.createElement('canvas');
-      canvas.width = videoRef.current.videoWidth;
-      canvas.height = videoRef.current.videoHeight;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(videoRef.current, 0, 0);
-      
-      const photoData = canvas.toDataURL('image/jpeg');
-      const newPhotos = [...capturedPhotos, photoData];
-      setCapturedPhotos(newPhotos);
-      setFormData(prev => ({ ...prev, livePhotos: newPhotos }));
-      
+  // Simulate ID verification against existing user data
+  const verifyIDDocuments = async (idFront, idBack) => {
+    return new Promise((resolve) => {
       setTimeout(() => {
-        setVerificationStatus(prev => ({
-          ...prev,
-          liveness: 'detected',
-          photosCount: newPhotos.length
-        }));
-      }, 1000);
-    }
+        // Simulate verification logic
+        // In real app, this would compare with user's existing ID data
+        const isVerified = true; // Simulate successful verification
+        resolve(isVerified);
+      }, 3000);
+    });
   };
 
-  const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { 
-          width: 1280, 
-          height: 720,
-          facingMode: 'user'
-        } 
-      });
-      
-      const recorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
-      const chunks = [];
-      
-      recorder.ondataavailable = (e) => chunks.push(e.data);
-      recorder.onstop = () => {
-        const blob = new Blob(chunks, { type: 'video/webm' });
-        const videoUrl = URL.createObjectURL(blob);
-        setRecordedVideo(videoUrl);
-        setFormData(prev => ({ ...prev, selfie: videoUrl }));
-      };
-      
-      recorder.start();
-      setIsRecording(true);
-      
+  // Simulate face verification against existing user data
+  const verifyFace = async (facePhoto) => {
+    return new Promise((resolve) => {
       setTimeout(() => {
-        recorder.stop();
-        stream.getTracks().forEach(track => track.stop());
-        setIsRecording(false);
-      }, 5000);
-      
-    } catch (error) {
-      console.error("Error recording video:", error);
-    }
+        // Simulate face matching with existing user profile
+        const isVerified = true; // Simulate successful verification
+        resolve(isVerified);
+      }, 2000);
+    });
   };
 
-  // File Upload Handlers
-  const handleFileUpload = (fileType, file) => {
+  // File Upload Handlers - Only verify, don't store
+  const handleFileUpload = async (fileType, file) => {
     const reader = new FileReader();
     setUploadProgress(prev => ({ ...prev, [fileType]: 0 }));
 
@@ -207,19 +159,41 @@ const RegisterSimProtection = ({ onClose }) => {
       }
     };
 
-    reader.onloadend = () => {
-      setFormData(prev => ({ ...prev, [fileType]: reader.result }));
+    reader.onloadend = async () => {
       setUploadProgress(prev => ({ ...prev, [fileType]: 100 }));
       
-      setTimeout(() => {
-        setUploadProgress(prev => ({ ...prev, [fileType]: 'verified' }));
-      }, 2000);
+      // Verify against existing user data instead of storing
+      if (fileType === 'idFront' || fileType === 'idBack') {
+        setIdVerificationStatus('verifying');
+        const isVerified = await verifyIDDocuments();
+        if (isVerified) {
+          setIdVerificationStatus('verified');
+          setFormData(prev => ({ ...prev, idVerified: true }));
+          setUploadProgress(prev => ({ ...prev, [fileType]: 'verified' }));
+        } else {
+          setIdVerificationStatus('failed');
+          setErrors(prev => ({ ...prev, idVerification: "ID verification failed. Please ensure documents match your registration." }));
+        }
+      }
+      
+      if (fileType === 'facePhoto') {
+        setFaceVerificationStatus('verifying');
+        const isVerified = await verifyFace();
+        if (isVerified) {
+          setFaceVerificationStatus('verified');
+          setFormData(prev => ({ ...prev, faceVerified: true }));
+          setUploadProgress(prev => ({ ...prev, [fileType]: 'verified' }));
+        } else {
+          setFaceVerificationStatus('failed');
+          setErrors(prev => ({ ...prev, faceVerification: "Face verification failed. Please ensure photo matches your ID." }));
+        }
+      }
     };
 
     reader.readAsDataURL(file);
   };
 
-  // Signature Functions
+  // Signature Functions - Only track if signature was provided, don't store image
   const startDrawing = (e) => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
@@ -249,9 +223,12 @@ const RegisterSimProtection = ({ onClose }) => {
     const ctx = canvas.getContext('2d');
     ctx.closePath();
     setIsDrawing(false);
+    
+    // Only track that signature was provided, don't store the image data
+    const hasSignature = true;
     setFormData(prev => ({ 
       ...prev, 
-      digitalSignature: canvas.toDataURL() 
+      signatureProvided: hasSignature 
     }));
   };
 
@@ -259,7 +236,7 @@ const RegisterSimProtection = ({ onClose }) => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    setFormData(prev => ({ ...prev, digitalSignature: "" }));
+    setFormData(prev => ({ ...prev, signatureProvided: false }));
   };
 
   // Form Handlers
@@ -318,12 +295,8 @@ const RegisterSimProtection = ({ onClose }) => {
     
     switch (step) {
       case 0:
-        if (!formData.idNumber) {
-          newErrors.idNumber = "ID number is required";
-        }
-        if (!formData.idFront) newErrors.idFront = "ID front photo required";
-        if (!formData.idBack) newErrors.idBack = "ID back photo required";
-        if (formData.livePhotos.length < 3) newErrors.livePhotos = "Please capture at least 3 live photos";
+        if (!formData.idVerified) newErrors.idVerification = "ID verification required";
+        if (!formData.faceVerified) newErrors.faceVerification = "Face verification required";
         if (!formData.biometricConsent) newErrors.biometricConsent = "Biometric consent required";
         break;
         
@@ -344,7 +317,7 @@ const RegisterSimProtection = ({ onClose }) => {
         
       case 3:
         if (!formData.fullLegalName) newErrors.fullLegalName = "Legal name required";
-        if (!formData.digitalSignature) newErrors.digitalSignature = "Signature required";
+        if (!formData.signatureProvided) newErrors.signature = "Signature required";
         if (!formData.perjuryCertification) newErrors.perjuryCertification = "Required";
         if (!formData.bindingAgreement) newErrors.bindingAgreement = "Required";
         break;
@@ -361,9 +334,6 @@ const RegisterSimProtection = ({ onClose }) => {
   };
 
   const prevStep = () => {
-    if (currentStep === 0) {
-      stopCamera();
-    }
     setCurrentStep(prev => prev - 1);
   };
 
@@ -374,14 +344,45 @@ const RegisterSimProtection = ({ onClose }) => {
     
     setLoading(true);
     try {
+      // Only store verification status and metadata, not image data
       const submissionData = {
         simProtection: {
-          ...formData,
+          // Verification status only
+          idVerified: formData.idVerified,
+          faceVerified: formData.faceVerified,
+          verificationTimestamp: serverTimestamp(),
+          
+          // Personal details
+          selectedNumber: formData.selectedNumber,
+          emailAlert: formData.emailAlert,
+          email: formData.email,
+          nextOfKinAlert: formData.nextOfKinAlert,
+          nextOfKin: formData.nextOfKin,
+          autoLock: formData.autoLock,
+          
+          // Bank insurance
+          bankAccount: formData.bankAccount,
+          bankAccounts: formData.bankAccounts,
+          
+          // Legal consents
+          telecomAuthorization: formData.telecomAuthorization,
+          financialAuthorization: formData.financialAuthorization,
+          automatedActions: formData.automatedActions,
+          privacyConsent: formData.privacyConsent,
+          insuranceTerms: formData.insuranceTerms,
+          
+          // Digital signature metadata only
+          fullLegalName: formData.fullLegalName,
+          signatureProvided: formData.signatureProvided,
+          signatureTimestamp: serverTimestamp(),
+          perjuryCertification: formData.perjuryCertification,
+          bindingAgreement: formData.bindingAgreement,
+          
+          // System data
           submittedAt: serverTimestamp(),
           ipAddress: await getClientIP(),
           userAgent: navigator.userAgent,
-          verificationStatus: "completed",
-          livePhotosCount: formData.livePhotos.length
+          verificationStatus: "completed"
         },
         preferredLanguage: formData.preferredLanguage,
         updatedAt: serverTimestamp()
@@ -395,7 +396,6 @@ const RegisterSimProtection = ({ onClose }) => {
       alert("Submission failed. Please try again.");
     } finally {
       setLoading(false);
-      stopCamera();
     }
   };
 
@@ -408,19 +408,6 @@ const RegisterSimProtection = ({ onClose }) => {
       return 'unknown';
     }
   };
-
-  // Start camera when identity verification step is active
-  useEffect(() => {
-    if (currentStep === 0) {
-      startCamera();
-    } else {
-      stopCamera();
-    }
-
-    return () => {
-      stopCamera();
-    };
-  }, [currentStep]);
 
   // Render Steps
   const renderStep = () => {
@@ -442,24 +429,13 @@ const RegisterSimProtection = ({ onClose }) => {
           <span className="font-semibold">🔐 IDENTITY VERIFICATION</span>
         </div>
         <p className="text-sm text-blue-600">
-          Secure multi-factor identity verification required for SIM protection insurance.
+          Verify your identity against your existing registration data.
         </p>
-      </div>
-
-      {/* ID Number - No Validation */}
-      <div>
-        <label className="block text-gray-700 font-medium mb-2">South African ID Number</label>
-        <input 
-          type="text" 
-          name="idNumber" 
-          value={formData.idNumber} 
-          onChange={handleIdChange} 
-          placeholder="Enter your ID number"
-          className={`w-full border px-3 py-3 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none ${
-            errors.idNumber ? "border-red-500" : "border-gray-300"
-          }`} 
-        />
-        {errors.idNumber && <p className="text-red-500 text-sm mt-1">{errors.idNumber}</p>}
+        {userExistingData && (
+          <p className="text-sm text-green-600 mt-2">
+            ✓ Found your existing registration data
+          </p>
+        )}
       </div>
 
       {/* ID Document Upload */}
@@ -468,7 +444,7 @@ const RegisterSimProtection = ({ onClose }) => {
           <label className="block text-gray-700 font-medium mb-2">📄 Front of ID/Passport</label>
           <div 
             className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:bg-gray-50 ${
-              errors.idFront ? "border-red-500" : "border-gray-300"
+              errors.idVerification ? "border-red-500" : "border-gray-300"
             }`}
             onClick={() => fileInputRefFront.current?.click()}
           >
@@ -482,19 +458,23 @@ const RegisterSimProtection = ({ onClose }) => {
               onChange={(e) => handleFileUpload("idFront", e.target.files[0])}
             />
           </div>
-          {uploadProgress.idFront === 'verified' && (
+          {idVerificationStatus === 'verified' && (
             <p className="text-green-500 text-sm mt-2 flex items-center gap-1">
-              <CheckCircle className="w-4 h-4" /> Verified
+              <CheckCircle className="w-4 h-4" /> Verified against registration
             </p>
           )}
-          {errors.idFront && <p className="text-red-500 text-sm mt-1">{errors.idFront}</p>}
+          {idVerificationStatus === 'failed' && (
+            <p className="text-red-500 text-sm mt-2 flex items-center gap-1">
+              <AlertTriangle className="w-4 h-4" /> Verification failed
+            </p>
+          )}
         </div>
 
         <div>
           <label className="block text-gray-700 font-medium mb-2">📄 Back of ID/Passport</label>
           <div 
             className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:bg-gray-50 ${
-              errors.idBack ? "border-red-500" : "border-gray-300"
+              errors.idVerification ? "border-red-500" : "border-gray-300"
             }`}
             onClick={() => fileInputRefBack.current?.click()}
           >
@@ -508,97 +488,88 @@ const RegisterSimProtection = ({ onClose }) => {
               onChange={(e) => handleFileUpload("idBack", e.target.files[0])}
             />
           </div>
-          {uploadProgress.idBack === 'verified' && (
+          {idVerificationStatus === 'verified' && (
             <p className="text-green-500 text-sm mt-2 flex items-center gap-1">
-              <CheckCircle className="w-4 h-4" /> Verified
+              <CheckCircle className="w-4 h-4" /> Documents matched
             </p>
           )}
-          {errors.idBack && <p className="text-red-500 text-sm mt-1">{errors.idBack}</p>}
         </div>
       </div>
 
-      {/* Live Face Verification */}
-      <div className="border-2 border-blue-200 rounded-lg p-6 bg-blue-50">
-        <label className="block text-gray-700 font-medium mb-4 text-lg">🤳 Live Face Verification</label>
-        
-        {/* Camera Feed */}
-        <div className="relative bg-black rounded-lg overflow-hidden mb-4">
-          <video
-            ref={videoRef}
-            autoPlay
-            playsInline
-            muted
-            className="w-full h-64 object-cover"
-          />
-          {isRecording && (
-            <div className="absolute top-4 right-4 flex items-center gap-2 bg-red-600 text-white px-3 py-1 rounded-full">
-              <Circle className="w-3 h-3 fill-current animate-pulse" />
-              <span className="text-sm">Recording</span>
-            </div>
-          )}
-        </div>
+      {errors.idVerification && (
+        <p className="text-red-500 text-sm">{errors.idVerification}</p>
+      )}
 
-        {/* Capture Controls */}
-        <div className="flex flex-col gap-3">
-          <div className="flex gap-3">
-            <button
-              type="button"
-              onClick={captureLivePhoto}
-              className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 flex items-center justify-center gap-2"
-            >
-              <Camera className="w-5 h-5" />
-              Capture Live Photo
-            </button>
+      {/* Face Verification */}
+      <div className="border-2 border-blue-200 rounded-lg p-6 bg-blue-50">
+        <label className="block text-gray-700 font-medium mb-4 text-lg">🤳 Face Verification</label>
+        
+        <div className="text-center mb-4">
+          <div className="bg-white rounded-lg p-6 border-2 border-dashed border-gray-300">
+            <Camera className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+            <p className="text-gray-600 mb-4">
+              Upload a clear photo of your face to verify against your ID
+            </p>
             
             <button
               type="button"
-              onClick={startRecording}
-              disabled={isRecording}
-              className="flex-1 bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 disabled:bg-gray-400 flex items-center justify-center gap-2"
+              onClick={() => faceInputRef.current?.click()}
+              className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 flex items-center justify-center gap-2 mx-auto"
             >
-              <Video className="w-5 h-5" />
-              {isRecording ? "Recording..." : "Record Video"}
+              <Upload className="w-5 h-5" />
+              Upload Face Photo
             </button>
+            
+            <input 
+              type="file" 
+              ref={faceInputRef}
+              className="hidden" 
+              accept="image/*"
+              onChange={(e) => handleFileUpload("facePhoto", e.target.files[0])}
+            />
           </div>
-
-          {/* Captured Photos Preview */}
-          {capturedPhotos.length > 0 && (
-            <div className="mt-4">
-              <p className="text-sm text-gray-600 mb-2">
-                Captured Photos: {capturedPhotos.length}/3
-              </p>
-              <div className="flex gap-2 overflow-x-auto">
-                {capturedPhotos.map((photo, index) => (
-                  <img
-                    key={index}
-                    src={photo}
-                    alt={`Live photo ${index + 1}`}
-                    className="w-20 h-20 object-cover rounded-lg border-2 border-green-500"
-                  />
-                ))}
-              </div>
-              {capturedPhotos.length >= 3 && (
-                <p className="text-green-500 text-sm mt-2 flex items-center gap-1">
-                  <CheckCircle className="w-4 h-4" />
-                  Liveness detection successful
-                </p>
-              )}
-            </div>
-          )}
-
-          {errors.livePhotos && (
-            <p className="text-red-500 text-sm">{errors.livePhotos}</p>
-          )}
         </div>
 
-        {/* Liveness Instructions */}
+        {/* Face Verification Status */}
+        {faceVerificationStatus !== 'pending' && (
+          <div className="mt-4 p-4 bg-white rounded-lg border">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-gray-700">Face Verification Status:</span>
+              {faceVerificationStatus === 'verifying' && (
+                <span className="text-blue-600 text-sm flex items-center gap-1">
+                  <Circle className="w-3 h-3 animate-pulse" />
+                  Verifying against ID...
+                </span>
+              )}
+              {faceVerificationStatus === 'verified' && (
+                <span className="text-green-600 text-sm flex items-center gap-1">
+                  <CheckCircle className="w-4 h-4" />
+                  Face matched successfully
+                </span>
+              )}
+              {faceVerificationStatus === 'failed' && (
+                <span className="text-red-600 text-sm flex items-center gap-1">
+                  <AlertTriangle className="w-4 h-4" />
+                  Face match failed
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+
+        {errors.faceVerification && (
+          <p className="text-red-500 text-sm mt-2">{errors.faceVerification}</p>
+        )}
+
+        {/* Face Verification Instructions */}
         <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-          <h4 className="font-semibold text-yellow-800 mb-2">Liveness Detection Instructions:</h4>
+          <h4 className="font-semibold text-yellow-800 mb-2">Face Verification Requirements:</h4>
           <ul className="text-sm text-yellow-700 space-y-1">
-            <li>• Capture 3 photos with different facial expressions</li>
-            <li>• Ensure good lighting and face the camera directly</li>
-            <li>• Remove sunglasses, hats, or face coverings</li>
-            <li>• Follow the on-screen prompts for movements</li>
+            <li>• Clear, well-lit photo of your face</li>
+            <li>• Face should be clearly visible without obstructions</li>
+            <li>• No sunglasses, hats, or face coverings</li>
+            <li>• Look directly at the camera</li>
+            <li>• Photo will be compared with your ID documents</li>
           </ul>
         </div>
       </div>
@@ -614,8 +585,8 @@ const RegisterSimProtection = ({ onClose }) => {
         <div>
           <label className="text-gray-700 font-medium">Biometric Consent</label>
           <p className="text-sm text-gray-600 mt-1">
-            "I consent to biometric verification including liveness detection and face matching. 
-            Biometric data will be stored for 90 days then automatically deleted per POPIA regulations."
+            "I consent to biometric verification including face matching with my ID documents. 
+            Biometric data will be processed securely and not stored permanently."
           </p>
         </div>
       </div>
@@ -623,6 +594,7 @@ const RegisterSimProtection = ({ onClose }) => {
     </div>
   );
 
+  // ... (rest of the render methods remain the same as previous implementation)
   const renderBankInsurance = () => (
     <div className="space-y-6">
       <div className="bg-green-50 border border-green-200 rounded-lg p-4">
@@ -833,7 +805,7 @@ const RegisterSimProtection = ({ onClose }) => {
           </button>
           <span className="text-xs text-gray-500">Sign above exactly as on your ID</span>
         </div>
-        {errors.digitalSignature && <p className="text-red-500 text-sm mt-1">{errors.digitalSignature}</p>}
+        {errors.signature && <p className="text-red-500 text-sm mt-1">{errors.signature}</p>}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600 bg-gray-50 p-4 rounded-lg">
@@ -892,9 +864,12 @@ const RegisterSimProtection = ({ onClose }) => {
       <div className="space-y-4">
         <div className="border-b pb-4">
           <h3 className="font-semibold text-gray-800 mb-2">Identity Verification</h3>
-          <p className="text-sm text-gray-600">✓ South African ID: {formData.idNumber}</p>
-          <p className="text-sm text-gray-600">✓ Documents uploaded and verified</p>
-          <p className="text-sm text-gray-600">✓ Live photos captured: {formData.livePhotos.length}</p>
+          <p className="text-sm text-gray-600">
+            ✓ ID Documents: {formData.idVerified ? 'Verified against registration' : 'Pending'}
+          </p>
+          <p className="text-sm text-gray-600">
+            ✓ Face Verification: {formData.faceVerified ? 'Matched successfully' : 'Pending'}
+          </p>
           <p className="text-sm text-gray-600">✓ Biometric consent provided</p>
         </div>
 

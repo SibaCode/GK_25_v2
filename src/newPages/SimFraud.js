@@ -22,7 +22,6 @@ export default function SimFraud() {
 
   const { t, i18n } = useTranslation();
 
-  // Fetch user from Firestore and listen for changes
   useEffect(() => {
     const unsubscribeAuth = auth.onAuthStateChanged((user) => {
       if (user) {
@@ -37,14 +36,12 @@ export default function SimFraud() {
     return () => unsubscribeAuth();
   }, []);
 
-  // Update i18n language based on user's preferredLanguage
   useEffect(() => {
     if (currentUser?.preferredLanguage) {
       i18n.changeLanguage(currentUser.preferredLanguage);
     }
   }, [currentUser, i18n]);
 
-  // Dynamic Coverage Calculation
   const calculateCoverageTotal = () => {
     let total = currentUser?.simProtection?.coverage || 0;
     if (currentUser?.creditLockActive) total += currentUser?.creditLockCoverage || 0;
@@ -52,7 +49,6 @@ export default function SimFraud() {
     return total >= 1000000 ? `${total / 1000000}M` : `${total / 1000}K`;
   };
 
-  // Active services count
   const activeServicesCount = () => {
     let count = currentUser?.simProtection?.active ? 1 : 0;
     if (currentUser?.creditLockActive) count++;
@@ -60,7 +56,6 @@ export default function SimFraud() {
     return count;
   };
 
-  // Security score
   const calculateSecurityScore = () => {
     let score = 0;
     if (currentUser?.simProtection?.active) score += 65;
@@ -291,19 +286,8 @@ export default function SimFraud() {
               </p>
               <div className="flex flex-col gap-2">
                 <button  onClick={() => setOpenModal("registerSim")} className="bg-blue-500 text-white py-3 rounded-lg font-semibold hover:bg-blue-600 transition">View Alerts</button>
-                {/* <button className="bg-blue-100 text-blue-700 border border-blue-500 py-3 rounded-lg font-semibold hover:bg-blue-200 transition">Travel / Country Move</button> */}
               </div>
             </div>
-            {/* <button
-              onClick={() => setOpenModal("viewAlerts")}
-              className="bg-gradient-to-br from-red-500 to-red-600 text-white p-6 rounded-2xl shadow-md hover:scale-105 transform transition duration-200"
-            >
-              <div className="flex items-center gap-3 mb-2">
-                <AlertTriangle className="w-8 h-8" />
-                <span className="text-lg font-semibold">View Alerts</span>
-              </div>
-              <p className="text-sm text-red-100">See recent threats</p>
-            </button> */}
             <div className="bg-red-50 border border-red-300 rounded-2xl p-6 flex flex-col justify-between">
               <h3 className="text-lg font-bold text-gray-800 mb-2">Alerts</h3>
               <p className="text-gray-600 text-sm mb-4">
@@ -317,23 +301,11 @@ export default function SimFraud() {
              <div className="bg-yellow-50 border border-yellow-300 rounded-2xl p-6 flex flex-col justify-between">
               <h3 className="text-lg font-bold text-gray-800 mb-2">Pre-Declare Changes</h3>
               <p className="text-gray-600 text-sm mb-4">
-                {/* Notify us if you plan to swap your SIM or travel abroad. Prevent false alarms. */}
               </p>
               <div className="flex flex-col gap-2">
                 <button className="bg-yellow-500 text-white py-3 rounded-lg font-semibold hover:bg-yellow-600 transition">SIM Swap</button>
-                {/* <button className="bg-yellow-100 text-yellow-700 border border-yellow-500 py-3 rounded-lg font-semibold hover:bg-yellow-200 transition">Travel / Country Move</button> */}
               </div>
             </div>
-            {/* <div className="bg-yellow-50 border border-yellow-300 rounded-2xl p-6 flex flex-col justify-between">
-              <h3 className="text-lg font-bold text-gray-800 mb-2">Pre-Declare Changes</h3>
-              <p className="text-gray-600 text-sm mb-4">
-                Notify us if you plan to swap your SIM or travel abroad. Prevent false alarms.
-              </p>
-              <div className="flex flex-col gap-2">
-                <button className="bg-yellow-500 text-white py-3 rounded-lg font-semibold hover:bg-yellow-600 transition">SIM Swap</button>
-                <button className="bg-yellow-100 text-yellow-700 border border-yellow-500 py-3 rounded-lg font-semibold hover:bg-yellow-200 transition">Travel / Country Move</button>
-              </div>
-            </div> */}
           </div>
 
           {/* Current Protected Account */}
