@@ -17,18 +17,11 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [isAlertModalOpen, setIsAlertModalOpen] = useState(false);
   const [openModal, setOpenModal] = useState(null); // null | "register" | "view" | "edit"
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const { t, i18n } = useTranslation();
 
-  // Helper to refresh current user from Firestore
-  const refreshCurrentUser = async () => {
-    if (!auth.currentUser) return;
-    const docRef = doc(db, "users", auth.currentUser.uid);
-    const docSnap = await getDoc(docRef);
-    if (docSnap.exists()) setCurrentUser(docSnap.data());
-  };
-
-  // Fetch current user
+  // Fetch user from Firestore and listen for changes
   useEffect(() => {
     const unsubscribeAuth = auth.onAuthStateChanged((user) => {
       if (user) {
@@ -50,25 +43,26 @@ export default function Dashboard() {
     }
   }, [currentUser, i18n]);
 
-  // Calculate total coverage amount
+  // Dynamic Coverage Calculation
   const calculateCoverageTotal = () => {
-    let total = 1000000; // SIM Protection base
-    if (currentUser?.creditLockActive) total += 50000; // Credit Lock coverage
-    // Format for display
-    return total >= 1000000 ? `${total/1000000}M` : `${total/1000}K`;
+    let total = currentUser?.simProtection?.coverage || 0;
+    if (currentUser?.creditLockActive) total += currentUser?.creditLockCoverage || 0;
+    if (currentUser?.dataBrokerActive) total += currentUser?.dataBrokerCoverage || 0;
+    return total >= 1000000 ? `${total / 1000000}M` : `${total / 1000}K`;
   };
 
-  // Calculate active services count
+  // Active services count
   const activeServicesCount = () => {
-    let count = 1; // SIM Protection is always active (base service)
+    let count = currentUser?.simProtection?.active ? 1 : 0;
     if (currentUser?.creditLockActive) count++;
     if (currentUser?.dataBrokerActive) count++;
     return count;
   };
 
-  // Calculate security score
+  // Security score
   const calculateSecurityScore = () => {
-    let score = 65; // Base score with only SIM protection
+    let score = 0;
+    if (currentUser?.simProtection?.active) score += 65;
     if (currentUser?.creditLockActive) score += 20;
     if (currentUser?.dataBrokerActive) score += 15;
     return Math.min(score, 100);
@@ -80,7 +74,7 @@ export default function Dashboard() {
       window.location.href = "/login";
     } catch (error) {
       console.error("Logout failed:", error);
-      alert(t("logoutFailed") || "Failed to logout. Try again.");
+      alert(t("logoutFailed") || t("logoutFailedFallback"));
     }
   };
 
@@ -98,18 +92,12 @@ export default function Dashboard() {
   };
 
   const handleActivateService = (service) => {
-    // Navigate to the respective service page for activation
-    if (service === 'creditLock') {
-      window.location.href = '/CreditLock';
-    } else if (service === 'dataBroker') {
-      window.location.href = '/DataBroker';
-    }
+    if (service === "creditLock") window.location.href = "/CreditLock";
+    if (service === "dataBroker") window.location.href = "/DataBroker";
   };
 
   const handleFileClaim = () => {
-    // Implement claim filing logic
-    alert("Redirecting to claims portal...");
-    // window.location.href = '/file-claim';
+    alert(t("redirectClaims") || "Redirecting to claims portal...");
   };
 
   if (loading) return <p className="text-center mt-10 text-gray-600">{t("loadingUser")}</p>;
@@ -121,36 +109,64 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gray-100">
-      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-6 p-4">
+    {/* Mobile Navbar */}
+<div className="lg:hidden bg-white shadow-sm border-b p-4 sticky top-0 z-50">
+  <div className="flex items-center justify-between">
+    <div className="flex items-center gap-3">
+      <button 
+        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+        className="p-2 rounded-lg hover:bg-gray-100 transition"
+      >
+        {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+      </button>
+      <div>
+        <h1 className="text-xl font-bold text-blue-600">SimSure</h1>
+        <p className="text-xs text-gray-500">FSP License #123456</p>
+      </div>
+    </div>
+    <div className="flex items-center gap-3">
+      <button 
+        onClick={() => setIsAlertModalOpen(true)}
+        className="relative p-2 rounded-lg hover:bg-gray-100 transition"
+      >
+        <Bell className="w-5 h-5" />
+        {alerts.length > 0 && (
+          <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+            {alerts.length}
+          </span>
+        )}
+      </button>
+    </div>
+  </div>
+</div>
 
-        {/* Sidebar */}
-        <div className="lg:col-span-1 bg-white rounded-3xl shadow-md p-5 flex flex-col gap-6 overflow-auto max-h-[90vh]">
-          {/* Logo */}
+      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-6 p-4 lg:pt-6">
+        {/* Sidebar - Hidden on mobile when menu is closed */}
+        <div className={`${mobileMenuOpen ? 'block' : 'hidden'} lg:block lg:col-span-1 bg-white rounded-3xl shadow-md p-5 flex flex-col gap-6 overflow-auto max-h-[90vh]`}>
+          {/* Logo - Hidden on mobile since it's in navbar */}
           <div className="hidden lg:block mb-6">
             <h1 className="text-2xl font-bold text-blue-600">SimSure</h1>
             <p className="text-xs text-gray-500 mt-1">FSP License #123456</p>
           </div>
 
-          {/* Enhanced Profile Section */}
+          {/* Profile */}
           <div className="flex items-center gap-4 p-3 bg-blue-50 rounded-lg">
             <div className="w-14 h-14 rounded-full bg-gradient-to-tr from-blue-200 to-blue-400 flex items-center justify-center text-blue-600 font-bold text-lg shadow">
               {currentUser.fullName?.split(" ").map((n) => n[0]).join("") || "U"}
             </div>
             <div className="flex flex-col justify-center truncate">
               <h2 className="font-semibold text-gray-800 text-base">{currentUser.fullName}</h2>
-              <p className="text-xs text-gray-500">Policy Holder</p>
+              <p className="text-xs text-gray-500">{t("policyHolder")}</p>
               <div className="flex items-center gap-1 mt-1">
                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <span className="text-xs text-green-600 font-semibold">Protected</span>
+                <span className="text-xs text-green-600 font-semibold">{currentUser.simProtection?.active ? t("protected") : t("inactive")}</span>
               </div>
             </div>
           </div>
 
           {/* Language Selector */}
           <div className="flex flex-col gap-1">
-            <label htmlFor="language-select" className="text-sm font-semibold text-gray-700">
-              {t("preferredLanguage")}
-            </label>
+            <label htmlFor="language-select" className="text-sm font-semibold text-gray-700">{t("preferredLanguage")}</label>
             <select
               id="language-select"
               value={currentUser.preferredLanguage || "en"}
@@ -165,51 +181,70 @@ export default function Dashboard() {
             </select>
           </div>
 
-          {/* Service Links */}
+          {/* Services */}
           <div className="flex flex-col gap-3 mb-6">
-            <Link to="/SimFraud" className="flex items-center gap-2 p-3 rounded-lg hover:bg-blue-50 transition border-l-4 border-blue-500 bg-blue-25">
-              <Bell className="w-5 h-5 text-blue-600" /> 
+            <Link 
+              to="/SimFraud" 
+              onClick={() => setMobileMenuOpen(false)}
+              className={`flex items-center gap-2 p-3 rounded-lg hover:bg-blue-50 transition border-l-4 ${currentUser.simProtection?.active ? "border-blue-500 bg-blue-25" : "border-gray-300"}`}
+            >
+              <Bell className="w-5 h-5 text-blue-600" />
               <div>
-                <div className="font-semibold text-gray-800">SIM Fraud Alert</div>
-                <div className="text-xs text-gray-500">$1M Coverage • Active</div>
+                <div className="font-semibold text-gray-800">{t("simFraudAlert")}</div>
+                <div className="text-xs text-gray-500">${currentUser.simProtection?.coverage || 0} {t("coverage")} • {currentUser.simProtection?.active ? t("active") : t("inactive")}</div>
               </div>
             </Link>
-            <Link to="/CreditLock" className="flex items-center gap-2 p-3 rounded-lg hover:bg-purple-50 transition border-l-4 border-purple-300">
-              <Lock className="w-5 h-5 text-purple-600" /> 
+            <Link 
+              to="/CreditLock" 
+              onClick={() => setMobileMenuOpen(false)}
+              className={`flex items-center gap-2 p-3 rounded-lg hover:bg-purple-50 transition border-l-4 ${currentUser.creditLockActive ? "border-purple-300" : "border-gray-300"}`}
+            >
+              <Lock className="w-5 h-5 text-purple-600" />
               <div>
-                <div className="font-semibold text-gray-800">Credit File Lock</div>
-                <div className="text-xs text-gray-500">$50K Coverage • Inactive</div>
+                <div className="font-semibold text-gray-800">{t("creditFileLock")}</div>
+                <div className="text-xs text-gray-500">${currentUser.creditLockCoverage || 0} {t("coverage")} • {currentUser.creditLockActive ? t("active") : t("inactive")}</div>
               </div>
             </Link>
-            <Link to="/DataBroker" className="flex items-center gap-2 p-3 rounded-lg hover:bg-green-50 transition border-l-4 border-green-300">
-              <Database className="w-5 h-5 text-green-600" /> 
+            <Link 
+              to="/DataBroker" 
+              onClick={() => setMobileMenuOpen(false)}
+              className={`flex items-center gap-2 p-3 rounded-lg hover:bg-green-50 transition border-l-4 ${currentUser.dataBrokerActive ? "border-green-300" : "border-gray-300"}`}
+            >
+              <Database className="w-5 h-5 text-green-600" />
               <div>
-                <div className="font-semibold text-gray-800">Data Broker Removal</div>
-                <div className="text-xs text-gray-500">Preventive • Inactive</div>
+                <div className="font-semibold text-gray-800">{t("dataBrokerRemoval")}</div>
+                <div className="text-xs text-gray-500">{t("preventive")} • {currentUser.dataBrokerActive ? t("active") : t("inactive")}</div>
               </div>
             </Link>
           </div>
 
           {/* Policy Documents */}
           <div className="flex flex-col gap-2">
-            <button className="flex items-center gap-2 p-3 rounded-lg hover:bg-gray-100 transition text-gray-700">
+            <button 
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-2 p-3 rounded-lg hover:bg-gray-100 transition text-gray-700"
+            >
               <FileText className="w-5 h-5 text-gray-600" />
-              <span className="text-sm font-medium">Policy Documents</span>
+              <span className="text-sm font-medium">{t("policyDocuments")}</span>
             </button>
-            <button className="flex items-center gap-2 p-3 rounded-lg hover:bg-gray-100 transition text-gray-700">
+            <button 
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-2 p-3 rounded-lg hover:bg-gray-100 transition text-gray-700"
+            >
               <Shield className="w-5 h-5 text-gray-600" />
-              <span className="text-sm font-medium">Terms & Conditions</span>
+              <span className="text-sm font-medium">{t("termsConditions")}</span>
             </button>
           </div>
 
-          {/* Help / FAQ */}
-          <button className="bg-gray-100 text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-200 transition text-sm font-medium flex items-center justify-center gap-2">
+          {/* Help / Logout */}
+          <button 
+            onClick={() => setMobileMenuOpen(false)}
+            className="bg-gray-100 text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-200 transition text-sm font-medium flex items-center justify-center gap-2"
+          >
             <span className="text-blue-500 font-bold">?</span> {t("help")}
           </button>
-
-          {/* Logout */}
-          <button
-            onClick={handleLogout}
+          <button 
+            onClick={handleLogout} 
             className="mt-auto flex items-center justify-center gap-2 bg-red-500 text-white px-4 py-2 rounded-xl hover:bg-red-600 transition duration-200 shadow-sm text-sm font-medium"
           >
             <LogOut className="w-4 h-4" /> {t("logout")}
@@ -217,152 +252,68 @@ export default function Dashboard() {
         </div>
 
         {/* Main Dashboard */}
-        <div className="lg:col-span-3 space-y-6 overflow-auto max-h-[90vh]">
-
-          {/* Policy Overview - REPLACED WELCOME SECTION */}
+        <div className="lg:col-span-3 space-y-6 overflow-auto">
+          {/* Policy Overview */}
           <div className="bg-white p-6 rounded-3xl shadow-md border-l-4 border-blue-500">
             <div className="flex justify-between items-start">
               <div>
-                <h2 className="text-xl font-bold text-gray-800">Your Protection Portfolio</h2>
+                <h2 className="text-xl font-bold text-gray-800">{t("yourProtectionPortfolio")}</h2>
                 <p className="text-gray-600 text-sm mt-1">Policy #POL-{currentUser.uid?.slice(-8).toUpperCase() || "ACTIVE"}</p>
-                <p className="text-gray-500 text-xs mt-2">Member Since: {new Date(currentUser.createdAt?.toDate() || new Date()).toLocaleDateString()}</p>
+                <p className="text-gray-500 text-xs mt-2">{t("memberSince")}: {new Date(currentUser.createdAt?.toDate() || new Date()).toLocaleDateString()}</p>
               </div>
               <div className="text-right">
                 <p className="text-2xl font-bold text-blue-600">{calculateCoverageTotal()}</p>
-                <p className="text-gray-500 text-sm">Total Coverage</p>
+                <p className="text-gray-500 text-sm">{t("totalCoverage")}</p>
                 <div className="flex items-center gap-2 mt-1">
                   <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  <span className="text-xs text-green-600">{activeServices}/3 Services Active</span>
+                  <span className="text-xs text-green-600">{activeServices}/3 {t("servicesActive")}</span>
                 </div>
               </div>
             </div>
-            
+            {/* Coverage Cards */}
             <div className="grid grid-cols-3 gap-4 mt-4">
               <div className="text-center p-3 bg-blue-50 rounded-lg">
-                <p className="font-semibold text-blue-700">$1M</p>
-                <p className="text-xs text-gray-600">SIM Protection</p>
-                <div className="w-3 h-3 bg-green-500 rounded-full mx-auto mt-1"></div>
+                <p className="font-semibold text-blue-700">${currentUser.simProtection?.coverage || 0}</p>
+                <p className="text-xs text-gray-600">{t("simProtection")}</p>
+                <div className={`w-3 h-3 rounded-full mx-auto mt-1 ${currentUser.simProtection?.active ? "bg-green-500" : "bg-red-500"}`}></div>
               </div>
               <div className="text-center p-3 bg-purple-50 rounded-lg">
-                <p className="font-semibold text-purple-700">$50K</p>
-                <p className="text-xs text-gray-600">Credit Fraud</p>
-                <div className="w-3 h-3 bg-yellow-500 rounded-full mx-auto mt-1"></div>
+                <p className="font-semibold text-purple-700">${currentUser.creditLockCoverage || 0}</p>
+                <p className="text-xs text-gray-600">{t("creditLock")}</p>
+                <div className={`w-3 h-3 rounded-full mx-auto mt-1 ${currentUser.creditLockActive ? "bg-green-500" : "bg-red-500"}`}></div>
               </div>
               <div className="text-center p-3 bg-green-50 rounded-lg">
-                <p className="font-semibold text-green-700">Active</p>
-                <p className="text-xs text-gray-600">Data Protection</p>
-                <div className="w-3 h-3 bg-yellow-500 rounded-full mx-auto mt-1"></div>
+                <p className="font-semibold text-green-700">${currentUser.dataBrokerCoverage || 0}</p>
+                <p className="text-xs text-gray-600">{t("dataBroker")}</p>
+                <div className={`w-3 h-3 rounded-full mx-auto mt-1 ${currentUser.dataBrokerActive ? "bg-green-500" : "bg-red-500"}`}></div>
               </div>
             </div>
           </div>
 
-          {/* Enhanced Services Cards with Insurance Status */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-            {/* SIM Fraud Card */}
-            <div className="bg-gradient-to-br from-blue-400 to-blue-600 text-white p-5 rounded-2xl shadow-md hover:scale-105 transform transition duration-200 relative">
-              <div className="absolute top-3 right-3 bg-white text-blue-600 text-xs px-2 py-1 rounded-full font-semibold">
-                ACTIVE
-              </div>
-              <Bell className="w-10 h-10 mb-2" />
-              <p className="text-lg font-semibold text-center">SIM Fraud Alert</p>
-              <p className="text-blue-100 text-sm text-center mt-2">$1M Coverage</p>
-              <div className="flex justify-between items-center mt-3 text-xs">
-                <span>Premium: $9.99/mo</span>
-                <span>Claims: 0</span>
-              </div>
+          {/* Alerts Section */}
+          <div className="bg-white p-6 rounded-3xl shadow-md border-l-4 border-red-500">
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="text-lg font-bold text-red-800 flex items-center gap-2"><AlertTriangle className="w-5 h-5" />{t("emergencyResponse")}</h3>
+              <button className="text-sm text-blue-600 underline" onClick={() => setIsAlertModalOpen(true)}>{t("viewAlerts")}</button>
             </div>
-
-            {/* Credit Lock Card */}
-            <div className="bg-gradient-to-br from-purple-400 to-purple-600 text-white p-5 rounded-2xl shadow-md hover:scale-105 transform transition duration-200 relative">
-              <div className="absolute top-3 right-3 bg-yellow-500 text-white text-xs px-2 py-1 rounded-full font-semibold">
-                INACTIVE
-              </div>
-              <Lock className="w-10 h-10 mb-2" />
-              <p className="text-lg font-semibold text-center">Credit File Lock</p>
-              <p className="text-purple-100 text-sm text-center mt-2">$50K Coverage</p>
-              <div className="flex justify-between items-center mt-3 text-xs">
-                <span>Premium: $4.99/mo</span>
-                <button 
-                  onClick={() => handleActivateService('creditLock')}
-                  className="bg-white text-purple-600 px-2 py-1 rounded text-xs font-semibold hover:bg-purple-50 transition"
-                >
-                  ACTIVATE
-                </button>
-              </div>
-            </div>
-
-            {/* Data Broker Card */}
-            <div className="bg-gradient-to-br from-green-400 to-green-600 text-white p-5 rounded-2xl shadow-md hover:scale-105 transform transition duration-200 relative">
-              <div className="absolute top-3 right-3 bg-yellow-500 text-white text-xs px-2 py-1 rounded-full font-semibold">
-                INACTIVE
-              </div>
-              <Database className="w-10 h-10 mb-2" />
-              <p className="text-lg font-semibold text-center">Data Broker Removal</p>
-              <p className="text-green-100 text-sm text-center mt-2">Preventive Service</p>
-              <div className="flex justify-between items-center mt-3 text-xs">
-                <span>Premium: $4.99/mo</span>
-                <button 
-                  onClick={() => handleActivateService('dataBroker')}
-                  className="bg-white text-green-600 px-2 py-1 rounded text-xs font-semibold hover:bg-green-50 transition"
-                >
-                  ACTIVATE
-                </button>
-              </div>
-            </div>
+            {alerts.length > 0 ? (
+              <ul className="list-disc list-inside text-gray-700">
+                {alerts.map((alert, i) => <li key={i}>{alert}</li>)}
+              </ul>
+            ) : <p className="text-gray-500 text-sm">{t("noActiveAlerts")}</p>}
           </div>
 
-          {/* Claims & Emergency Section */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Emergency Response */}
-            <div className="bg-red-50 border border-red-200 p-5 rounded-2xl">
-              <h3 className="text-lg font-bold text-red-800 mb-3 flex items-center gap-2">
-                <AlertTriangle className="w-5 h-5" />
-                Emergency Response
-              </h3>
-              <p className="text-red-700 text-sm mb-4">24/7 Claims & Support</p>
-              <div className="space-y-2">
-                <button 
-                  onClick={handleFileClaim}
-                  className="w-full bg-red-600 text-white py-3 rounded-lg font-semibold hover:bg-red-700 transition flex items-center justify-center gap-2"
-                >
-                  <FileText className="w-4 h-4" />
-                  File Claim Now
-                </button>
-                <button className="w-full bg-white text-red-600 border border-red-600 py-2 rounded-lg font-semibold hover:bg-red-50 transition">
-                  Call Emergency: 1-800-XXX-XXXX
-                </button>
-              </div>
+          {/* Security Score / Recommendations */}
+          <div className="bg-white p-6 rounded-3xl shadow-md border-l-4 border-blue-600">
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="text-lg font-bold text-blue-800 flex items-center gap-2"><Shield className="w-5 h-5" />{t("riskAssessment")}</h3>
+              <span className="text-sm text-gray-500">{t("securityScore")}: {securityScore}/100</span>
             </div>
-
-            {/* Risk Assessment */}
-            <div className="bg-blue-50 border border-blue-200 p-5 rounded-2xl">
-              <h3 className="text-lg font-bold text-blue-800 mb-3 flex items-center gap-2">
-                <Shield className="w-5 h-5" />
-                Risk Assessment
-              </h3>
-              <div className="mb-4">
-                <div className="flex justify-between text-sm mb-1">
-                  <span>Your Security Score</span>
-                  <span>{securityScore}/100</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div 
-                    className={`h-2 rounded-full ${
-                      securityScore >= 80 ? 'bg-green-500' : 
-                      securityScore >= 60 ? 'bg-yellow-500' : 'bg-red-500'
-                    }`} 
-                    style={{width: `${securityScore}%`}}
-                  ></div>
-                </div>
-              </div>
-              <p className="text-blue-700 text-sm">
-                <strong>Recommendation:</strong> {securityScore >= 80 ? 
-                  'Excellent protection! Maintain all services.' : 
-                  'Activate Credit Lock & Data Broker services for complete protection.'}
-              </p>
-            </div>
+            <p className="text-gray-700 text-sm">
+              {securityScore >= 80 ? t("recommendationExcellent") : t("recommendationImprove")}
+            </p>
           </div>
-         
+
           {/* Tabs */}
           <div className="bg-white p-6 rounded-3xl shadow-sm">
             <DashboardTabs t={t} />
@@ -400,41 +351,13 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
-       
       </div>
 
       {/* Modals */}
-      {openModal === "register" && (
-        <RegisterSimProtectionModal
-          isOpen={true}
-          onClose={() => {
-            setOpenModal(null);
-            refreshCurrentUser();
-          }}
-        />
-      )}
-
-      {openModal === "view" && (
-        <ViewSimProtectionModal
-          data={currentUser.simProtection}
-          onEdit={() => setOpenModal("edit")}
-          onClose={() => setOpenModal(null)}
-        />
-      )}
-
-      {openModal === "edit" && (
-        <EditSimProtectionModal
-          data={currentUser.simProtection}
-          onClose={() => setOpenModal(null)}
-        />
-      )}
-
-      {/* Alerts Modal */}
-      <AlertHistoryModal
-        isOpen={isAlertModalOpen}
-        onClose={() => setIsAlertModalOpen(false)}
-        alerts={alerts}
-      />
+      {isAlertModalOpen && <AlertHistoryModal onClose={() => setIsAlertModalOpen(false)} />}
+      {openModal === "register" && <RegisterSimProtectionModal onClose={() => setOpenModal(null)} />}
+      {openModal === "view" && <ViewSimProtectionModal onClose={() => setOpenModal(null)} />}
+      {openModal === "edit" && <EditSimProtectionModal onClose={() => setOpenModal(null)} />}
     </div>
   );
 }
